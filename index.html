@@ -1,1 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Basketball Money — Unified Digital Peel Prototype</title>
+  
+  <!-- Shared Styles -->
+  <link rel="stylesheet" href="css/shared.css">
+  
+  <!-- Tab switching script - EARLY BINDING to prevent parse-gap race conditions -->
+  <script src="js/tabs.js"></script>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav>
+    <div class="wrap">
+      <div class="navin">
+        <div class="brand">
+          <img src="logo.png" alt="Basketball Money">
+          <span>Basketball Money</span>
+        </div>
+        <div class="tabs">
+          <button class="tab active" data-tab="admin">Admin</button>
+          <button class="tab" data-tab="player">Player</button>
+          <button class="tab" data-tab="supporter">Supporter</button>
+          <button class="tab" data-tab="merchant">Merchant</button>
+          <button class="tab" data-tab="sponsor">Sponsor</button>
+          <button class="tab" data-tab="coach">Coach</button>
+        </div>
+      </div>
+    </div>
+  </nav>
 
+  <!-- Hero Section -->
+  <header>
+    <div class="wrap">
+      <div class="hero">
+        <div>
+          <div class="k">One complete Basketball Money system</div>
+          <h1>Unified Prototype • Versions 2–4 Combined</h1>
+          <p>Admin builds the fundraiser. Players get links. Supporters buy and peel. Merchants redeem. Sponsors see results.</p>
+        </div>
+        <img src="hero-image.png" alt="Basketball Money">
+      </div>
+    </div>
+  </header>
+
+  <!-- Tab Content Containers -->
+  <main>
+    <section id="view-admin" class="view active"></section>
+    <section id="view-player" class="view"></section>
+    <section id="view-supporter" class="view"></section>
+    <section id="view-merchant" class="view"></section>
+    <section id="view-sponsor" class="view"></section>
+    <section id="view-coach" class="view"></section>
+  </main>
+
+  <!-- Main app script -->
+  <script>
+    // Your Supabase and app functions go here
+  </script>
+</body>
+</html>
