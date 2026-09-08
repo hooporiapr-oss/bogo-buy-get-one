@@ -65,7 +65,44 @@
 
   <!-- Tab Content Containers -->
   <main>
-    <section id="view-admin" class="view active"></section>
+    <section id="view-admin" class="view active">
+  <div class="wrap">
+    <h2>Admin Panel</h2>
+    
+    <div id="adminLocked" class="panel">
+      <h3>Admin Access Required</h3>
+      <p>Enter your admin access code to create campaigns.</p>
+      
+      <label>Admin Code</label>
+      <input type="password" id="adminCode" placeholder="Enter admin code">
+      
+      <button class="btn" onclick="unlockAdmin()">Unlock Admin</button>
+    </div>
+    
+    <div id="adminUnlockedContent" style="display:none;">
+      <div class="panel">
+        <h3>Create Campaign</h3>
+        
+        <label>Campaign Name</label>
+        <input type="text" id="campaignName" placeholder="Enter campaign name">
+        
+        <label>Campaign Goal ($)</label>
+        <input type="number" id="campaignGoal" placeholder="Enter goal amount">
+        
+        <label>Description</label>
+        <textarea id="campaignDesc" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
+        
+        <button class="btn" onclick="createCampaign()">Create Campaign</button>
+        
+        <div id="campaignSuccess" style="display:none;margin-top:20px;padding:15px;background:#14331e;border:1px solid #285f39;border-radius:10px;color:#9aeeb3;">
+          <p><strong>Campaign Created!</strong></p>
+          <p>Coach Access Code: <strong id="coachCode">-</strong></p>
+          <p style="font-size:12px;margin-top:10px;">Share this code with your coach.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
     <section id="view-player" class="view"></section>
     <section id="view-supporter" class="view"></section>
     <section id="view-merchant" class="view"></section>
