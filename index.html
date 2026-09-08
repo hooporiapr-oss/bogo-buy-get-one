@@ -138,12 +138,24 @@
         const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         
         // Create campaign in Supabase
-        const campaign = await supabaseCall('campaigns', 'POST', {
-          name,
-          goal: parseFloat(goal),
-          description: desc,
-          admin_code: 'admin123'
-        });
+const response = await fetch(`${SUPABASE_URL}/rest/v1/campaigns?select=*`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'apikey': SUPABASE_KEY
+  },
+  body: JSON.stringify({
+    name,
+    goal: parseFloat(goal),
+    description: desc,
+    admin_code: 'admin123'
+  })
+});
+
+if (!response.ok) throw new Error('Failed to create campaign');
+
+const campaign = await response.json();
         
         // Create coach entry for this campaign
         await supabaseCall('coaches', 'POST', {
