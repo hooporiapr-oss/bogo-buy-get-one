@@ -1,1 +1,33 @@
+<div class="wrap">
+  <h2>Coach Panel</h2>
+  <div class="panel">
+    <h3>Coach Access</h3>
+    
+    <label>Coach Access Code</label>
+    <input type="text" id="coachCode" placeholder="Enter your coach access code">
+    
+    <button class="btn" onclick="unlockCoach()">Unlock Coach Panel</button>
+    
+    <div id="coachContent" style="display:none;margin-top:20px;">
+      <h3>Team Statistics</h3>
+      <p>Your team's performance data will appear here.</p>
+      
+      <label>Add Player Note</label>
+      <textarea placeholder="Add notes about your team" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
+      
+      <button class="btn" style="margin-top:12px;">Save Notes</button>
+    </div>
+  </div>
+</div>
 
+<script>
+function unlockCoach() {
+  const code = document.getElementById('coachCode').value;
+  if (code === '1234') {
+    document.getElementById('coachContent').style.display = 'block';
+    alert('Coach panel unlocked!');
+  } else {
+    alert('Invalid access code');
+  }
+}
+</script>
