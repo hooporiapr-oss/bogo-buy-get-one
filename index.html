@@ -17,8 +17,8 @@
     <div class="wrap">
       <div class="navin">
         <div class="brand">
-  <img src="bball-money.jpg" alt="Basketball Money" style="width:50px;height:50px;border-radius:10px;">
-</div>
+          <img src="bball-money.jpg" alt="Basketball Money" style="width:50px;height:50px;border-radius:10px;">
+        </div>
         <div class="tabs">
           <button class="tab active" data-tab="admin">Admin</button>
           <button class="tab" data-tab="player">Player</button>
@@ -33,35 +33,35 @@
 
   <!-- Hero Section -->
   <header>
-  <div class="wrap">
-    <div class="hero">
-      <div>
-        <div class="k">Basketball Money Platform</div>
-        <h1>Raise Funds. Engage Fans. Win Together.</h1>
-        <p>A complete digital fundraising system for basketball teams. Create campaigns, sell peelable digital cards, track engagement, and reach your goals.</p>
-        
-        <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
-          <button class="btn alt" onclick="showTab('supporter')">Support a Team</button>
+    <div class="wrap">
+      <div class="hero">
+        <div>
+          <div class="k">Basketball Money Platform</div>
+          <h1>Raise Funds. Engage Fans. Win Together.</h1>
+          <p>A complete digital fundraising system for basketball teams. Create campaigns, sell peelable digital cards, track engagement, and reach your goals.</p>
+          
+          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+            <button class="btn alt" onclick="showTab('supporter')">Support a Team</button>
+          </div>
+          
+          <div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">Total Raised</p>
+              <p style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">$0</p>
+            </div>
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">Active Campaigns</p>
+              <p style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">0</p>
+            </div>
+          </div>
         </div>
         
-        <div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-          <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-            <p style="margin:0;font-size:12px;color:#aaa;">Total Raised</p>
-            <p style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">$0</p>
-          </div>
-          <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-            <p style="margin:0;font-size:12px;color:#aaa;">Active Campaigns</p>
-            <p style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">0</p>
-          </div>
+        <div style="text-align:center;">
+          <img src="bball-money.jpg" alt="Basketball Money" style="width:100%;border-radius:20px;box-shadow:0 25px 60px #0008;">
         </div>
       </div>
-      
-      <div style="text-align:center;">
-  <img src="bball-money.jpg" alt="Basketball Money" style="width:100%;border-radius:20px;box-shadow:0 25px 60px #0008;">
-</div>
     </div>
-  </div>
-</header>
+  </header>
 
   <!-- Tab Content Containers -->
   <main>
@@ -75,35 +75,96 @@
 
   <!-- Main app script -->
   <script>
-// Check if admin is already unlocked from session on page load
-if(sessionStorage.getItem('bm_admin_unlocked') === 'yes'){
-  setTimeout(() => {
-    const adminLocked = document.getElementById('adminLocked');
-    const adminUnlocked = document.getElementById('adminUnlockedContent');
-    if(adminLocked) adminLocked.style.display='none';
-    if(adminUnlocked) adminUnlocked.style.display='block';
-  }, 100);
-}
+    // Check if admin is already unlocked from session on page load
+    if(sessionStorage.getItem('bm_admin_unlocked') === 'yes'){
+      setTimeout(() => {
+        const adminLocked = document.getElementById('adminLocked');
+        const adminUnlocked = document.getElementById('adminUnlockedContent');
+        if(adminLocked) adminLocked.style.display='none';
+        if(adminUnlocked) adminUnlocked.style.display='block';
+      }, 100);
+    }
 
-function unlockAdmin() {
-  const code = document.getElementById('adminCode').value;
-  if (code === 'admin123') {
-    sessionStorage.setItem('bm_admin_unlocked', 'yes');
-    document.getElementById('adminLocked').style.display='none';
-    document.getElementById('adminUnlockedContent').style.display='block';
-    alert('Admin unlocked!');
-  } else {
-    alert('Invalid admin code');
-  }
-}
+    // Supabase setup
+    const SUPABASE_URL = 'https://sdaphocueugzfvjovuxd.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
 
-function createCampaign() {
-  const name = document.getElementById('campaignName').value;
-  const goal = document.getElementById('campaignGoal').value;
-  if (name && goal) {
-    alert('Campaign created: ' + name);
-  }
-}
-</script>
+    // Helper function to call Supabase REST API
+    async function supabaseCall(table, method = 'GET', data = null, filters = '') {
+      let url = `${SUPABASE_URL}/rest/v1/${table}`;
+      if (filters) url += filters;
+      
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY
+        }
+      };
+      
+      if (data) options.body = JSON.stringify(data);
+      
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`Supabase error: ${response.statusText}`);
+      return response.json();
+    }
+
+    // Admin unlock
+    function unlockAdmin() {
+      const code = document.getElementById('adminCode').value;
+      if (code === 'admin123') {
+        sessionStorage.setItem('bm_admin_unlocked', 'yes');
+        document.getElementById('adminLocked').style.display='none';
+        document.getElementById('adminUnlockedContent').style.display='block';
+      } else {
+        alert('Invalid admin code');
+      }
+    }
+
+    // Create campaign
+    async function createCampaign() {
+      const name = document.getElementById('campaignName').value;
+      const goal = document.getElementById('campaignGoal').value;
+      const desc = document.getElementById('campaignDesc').value;
+      
+      if (!name || !goal) {
+        alert('Please fill in all required fields');
+        return;
+      }
+      
+      try {
+        // Generate random coach code
+        const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        
+        // Create campaign in Supabase
+        const campaign = await supabaseCall('campaigns', 'POST', {
+          name,
+          goal: parseFloat(goal),
+          description: desc,
+          admin_code: 'admin123'
+        });
+        
+        // Create coach entry for this campaign
+        await supabaseCall('coaches', 'POST', {
+          campaign_id: campaign[0].id,
+          name: 'Head Coach',
+          access_code: coachCode
+        });
+        
+        // Show success
+        document.getElementById('campaignName').value = '';
+        document.getElementById('campaignGoal').value = '';
+        document.getElementById('campaignDesc').value = '';
+        document.getElementById('coachCode').textContent = coachCode;
+        document.getElementById('campaignSuccess').style.display = 'block';
+        
+        alert('Campaign created successfully!');
+      } catch (error) {
+        console.error('Error creating campaign:', error);
+        alert('Error creating campaign: ' + error.message);
+      }
+    }
+  </script>
 </body>
 </html>
