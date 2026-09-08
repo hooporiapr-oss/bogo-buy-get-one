@@ -42,11 +42,11 @@
           <div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
             <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
               <p style="margin:0;font-size:12px;color:#aaa;">Total Raised</p>
-              <p style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">$0</p>
+              <p id="statRaised" style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">—</p>
             </div>
             <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
               <p style="margin:0;font-size:12px;color:#aaa;">Active Campaigns</p>
-              <p style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">0</p>
+              <p id="statCampaigns" style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">—</p>
             </div>
           </div>
         </div>
@@ -1032,6 +1032,27 @@
       }
     }
 
+    // ===== HERO STATS =====
+
+    async function loadHeroStats() {
+      try {
+        const cards = await supabaseQuery('cards', 'GET', null, '?select=team_amount');
+        const raised = (cards || []).reduce((sum, c) => sum + Number(c.team_amount || 0), 0);
+        const el = document.getElementById('statRaised');
+        if (el) el.textContent = money(raised);
+      } catch (e) {
+        console.error('Hero raised stat:', e);
+      }
+
+      try {
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?select=id');
+        const el = document.getElementById('statCampaigns');
+        if (el) el.textContent = (campaigns || []).length;
+      } catch (e) {
+        console.error('Hero campaign stat:', e);
+      }
+    }
+
     // ===== PAGE WIRING =====
 
     document.addEventListener('click', function (e) {
@@ -1044,6 +1065,8 @@
 
     document.addEventListener('DOMContentLoaded', function () {
       const params = new URLSearchParams(window.location.search);
+
+      loadHeroStats();
 
       ['designPrice', 'designShare'].forEach(id => {
         const el = document.getElementById(id);
