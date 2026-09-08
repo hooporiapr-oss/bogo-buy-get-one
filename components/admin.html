@@ -1,22 +1,53 @@
 <div class="wrap">
   <h2>Admin Panel</h2>
-  <div class="panel">
-    <h3>Create Campaign</h3>
+  
+  <div id="adminLocked" class="panel">
+    <h3>Admin Access Required</h3>
+    <p>Enter your admin access code to create campaigns.</p>
     
-    <label>Campaign Name</label>
-    <input type="text" id="campaignName" placeholder="Enter campaign name">
+    <label>Admin Code</label>
+    <input type="password" id="adminCode" placeholder="Enter admin code">
     
-    <label>Campaign Goal</label>
-    <input type="number" id="campaignGoal" placeholder="Enter goal amount">
-    
-    <label>Description</label>
-    <textarea id="campaignDesc" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
-    
-    <button class="btn" onclick="createCampaign()">Create Campaign</button>
+    <button class="btn" onclick="unlockAdmin()">Unlock Admin</button>
+  </div>
+  
+  <div id="adminUnlockedContent" style="display:none;">
+    <div class="panel">
+      <h3>Create Campaign</h3>
+      
+      <label>Campaign Name</label>
+      <input type="text" id="campaignName" placeholder="Enter campaign name">
+      
+      <label>Campaign Goal</label>
+      <input type="number" id="campaignGoal" placeholder="Enter goal amount">
+      
+      <label>Description</label>
+      <textarea id="campaignDesc" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
+      
+      <button class="btn" onclick="createCampaign()">Create Campaign</button>
+    </div>
   </div>
 </div>
 
 <script>
+// Check if admin is already unlocked from session
+if(sessionStorage.getItem('bm_admin_unlocked') === 'yes'){
+  document.getElementById('adminLocked').style.display='none';
+  document.getElementById('adminUnlockedContent').style.display='block';
+}
+
+function unlockAdmin() {
+  const code = document.getElementById('adminCode').value;
+  if (code === 'admin123') { // Change this to your real admin code
+    sessionStorage.setItem('bm_admin_unlocked', 'yes');
+    document.getElementById('adminLocked').style.display='none';
+    document.getElementById('adminUnlockedContent').style.display='block';
+    alert('Admin unlocked!');
+  } else {
+    alert('Invalid admin code');
+  }
+}
+
 function createCampaign() {
   const name = document.getElementById('campaignName').value;
   const goal = document.getElementById('campaignGoal').value;
