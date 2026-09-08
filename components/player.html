@@ -3,32 +3,36 @@
   <div class="panel">
     <h3>Player Dashboard</h3>
     
-    <label>Player Name</label>
-    <input type="text" id="playerName" placeholder="Enter your name">
+    <div style="margin-top:20px;">
+      <label>Your Name</label>
+      <input type="text" id="playerNameInput" placeholder="Enter your name">
+      
+      <label>Team Code</label>
+      <input type="text" id="teamCode" placeholder="Ask your coach for the team code">
+      
+      <button class="btn" onclick="joinTeam()" style="margin-top:12px;">Join Team</button>
+    </div>
     
-    <label>Campaign Code</label>
-    <input type="text" id="campaignCode" placeholder="Enter campaign code">
-    
-    <button class="btn" onclick="joinCampaign()">Join Campaign</button>
-    
-    <div id="playerStats" style="display:none;margin-top:20px;">
-      <h3>Your Stats</h3>
-      <div class="panel" style="background:#ffffff08;margin-top:10px;padding:15px;">
-        <p><strong>Points:</strong> 0</p>
-        <p><strong>Rank:</strong> Pending</p>
-        <p><strong>Status:</strong> Active</p>
+    <div id="playerDash" style="display:none;margin-top:30px;">
+      <div style="padding:15px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+        <p><strong>You're part of the team!</strong></p>
+        <p style="margin-top:10px;font-size:13px;color:#aaa;">Supporters will peel cards with your name. Check back to see how much you've raised!</p>
       </div>
     </div>
   </div>
 </div>
 
 <script>
-function joinCampaign() {
-  const name = document.getElementById('playerName').value;
-  const code = document.getElementById('campaignCode').value;
+function joinTeam() {
+  const name = document.getElementById('playerNameInput').value;
+  const code = document.getElementById('teamCode').value;
+  
   if (name && code) {
-    document.getElementById('playerStats').style.display = 'block';
-    alert('Welcome, ' + name + '!');
+    sessionStorage.setItem('playerName', name);
+    document.getElementById('playerDash').style.display = 'block';
+    alert('Welcome to the team, ' + name + '!');
+  } else {
+    alert('Please fill in all fields');
   }
 }
 </script>
