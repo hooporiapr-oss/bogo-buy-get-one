@@ -1,38 +1,6 @@
 <div class="wrap">
   <h2>Player</h2>
-  <div class="panel">
-    <h3>Player Dashboard</h3>
-    
-    <div style="margin-top:20px;">
-      <label>Your Name</label>
-      <input type="text" id="playerNameInput" placeholder="Enter your name">
-      
-      <label>Team Code</label>
-      <input type="text" id="teamCode" placeholder="Ask your coach for the team code">
-      
-      <button class="btn" onclick="joinTeam()" style="margin-top:12px;">Join Team</button>
-    </div>
-    
-    <div id="playerDash" style="display:none;margin-top:30px;">
-      <div style="padding:15px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-        <p><strong>You're part of the team!</strong></p>
-        <p style="margin-top:10px;font-size:13px;color:#aaa;">Supporters will peel cards with your name. Check back to see how much you've raised!</p>
-      </div>
-    </div>
+  <div id="playerContent">
+    <p style="color:#aaa;">Loading...</p>
   </div>
 </div>
-
-<script>
-function joinTeam() {
-  const name = document.getElementById('playerNameInput').value;
-  const code = document.getElementById('teamCode').value;
-  
-  if (name && code) {
-    sessionStorage.setItem('playerName', name);
-    document.getElementById('playerDash').style.display = 'block';
-    alert('Welcome to the team, ' + name + '!');
-  } else {
-    alert('Please fill in all fields');
-  }
-}
-</script>
