@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Basketball Money — Unified Digital Peel Prototype</title>
-  
+  <title>Basketball Money</title>
+
   <link rel="stylesheet" href="css/shared.css">
   <script src="js/tabs.js"></script>
 </head>
@@ -16,12 +16,13 @@
           <img src="bball-money.jpg" alt="Basketball Money" style="width:50px;height:50px;border-radius:10px;">
         </div>
         <div class="tabs">
-          <button class="tab active" data-tab="admin">Admin</button>
-          <button class="tab" data-tab="player">Player</button>
-          <button class="tab" data-tab="supporter">Supporter</button>
-          <button class="tab" data-tab="merchant">Merchant</button>
-          <button class="tab" data-tab="sponsor">Sponsor</button>
-          <button class="tab" data-tab="coach">Coach</button>
+          <button class="tab active" data-tab="admin" data-i18n="tabAdmin">Admin</button>
+          <button class="tab" data-tab="player" data-i18n="tabPlayer">Player</button>
+          <button class="tab" data-tab="supporter" data-i18n="tabSupporter">Supporter</button>
+          <button class="tab" data-tab="merchant" data-i18n="tabMerchant">Merchant</button>
+          <button class="tab" data-tab="sponsor" data-i18n="tabSponsor">Sponsor</button>
+          <button class="tab" data-tab="coach" data-i18n="tabCoach">Coach</button>
+          <button id="langToggle" onclick="toggleLang()" style="padding:6px 12px;border-radius:8px;border:1px solid #ffffff2a;background:#ffffff10;color:#fff;cursor:pointer;font-size:12px;font-weight:700;margin-left:8px;">ES</button>
         </div>
       </div>
     </div>
@@ -31,26 +32,26 @@
     <div class="wrap">
       <div class="hero">
         <div>
-          <div class="k">Basketball Money Platform</div>
-          <h1>Raise Funds. Engage Fans. Win Together.</h1>
-          <p>A complete digital fundraising system for basketball teams. Create campaigns, sell peelable digital cards, track engagement, and reach your goals.</p>
-          
+          <div class="k" data-i18n="heroKicker">Basketball Money Platform</div>
+          <h1 data-i18n="heroTitle">Raise Funds. Engage Fans. Win Together.</h1>
+          <p data-i18n="heroBody">A complete digital fundraising system for basketball teams. Create campaigns, sell peelable digital cards, track engagement, and reach your goals.</p>
+
           <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
-            <button class="btn alt" onclick="showTab('supporter')">Support a Team</button>
+            <button class="btn alt" onclick="showTab('supporter')" data-i18n="supportTeam">Support a Team</button>
           </div>
-          
+
           <div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
             <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-              <p style="margin:0;font-size:12px;color:#aaa;">Total Raised</p>
+              <p style="margin:0;font-size:12px;color:#aaa;" data-i18n="totalRaised">Total Raised</p>
               <p id="statRaised" style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">—</p>
             </div>
             <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-              <p style="margin:0;font-size:12px;color:#aaa;">Active Campaigns</p>
+              <p style="margin:0;font-size:12px;color:#aaa;" data-i18n="activeCampaigns">Active Campaigns</p>
               <p id="statCampaigns" style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">—</p>
             </div>
           </div>
         </div>
-        
+
         <div style="text-align:center;">
           <img src="bball-money.jpg" alt="Basketball Money" style="width:100%;border-radius:20px;box-shadow:0 25px 60px #0008;">
         </div>
@@ -59,135 +60,129 @@
   </header>
 
   <main>
-    <!-- Admin Tab -->
     <section id="view-admin" class="view active">
       <div class="wrap">
-        <h2>Admin Panel</h2>
-        
-        <!-- Login Screen -->
+        <h2 data-i18n="adminPanel">Admin Panel</h2>
+
         <div id="adminLoginScreen" class="panel">
-          <h3>Admin Login</h3>
-          <p>Enter your admin password to access campaign management.</p>
-          
-          <label>Admin Password</label>
-          <input type="password" id="adminPassword" placeholder="Enter admin password">
-          
-          <button class="btn" onclick="adminLogin()" style="margin-top:12px;">Login</button>
+          <h3 data-i18n="adminLogin">Admin Login</h3>
+          <p data-i18n="adminLoginBody">Enter your admin password to access campaign management.</p>
+
+          <label data-i18n="adminPassword">Admin Password</label>
+          <input type="password" id="adminPassword" data-i18n-ph="adminPasswordPh" placeholder="Enter admin password">
+
+          <button class="btn" onclick="adminLogin()" style="margin-top:12px;" data-i18n="login">Login</button>
         </div>
-        
-        <!-- Admin Dashboard (hidden until logged in) -->
+
         <div id="adminDashboard" style="display:none;">
 
-          <!-- ===== MERCHANTS ===== -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <h3 style="margin:0;">Merchants</h3>
-            <button class="btn" onclick="toggleForm('createMerchantForm')">+ New Merchant</button>
+            <h3 style="margin:0;" data-i18n="merchants">Merchants</h3>
+            <button class="btn" onclick="toggleForm('createMerchantForm')" data-i18n="newMerchant">+ New Merchant</button>
           </div>
 
           <div id="createMerchantForm" class="panel" style="display:none;margin-bottom:20px;">
-            <h3>Add Merchant</h3>
+            <h3 data-i18n="addMerchant">Add Merchant</h3>
 
-            <label>Business Name</label>
-            <input type="text" id="merchantName" placeholder="e.g. Domino's Pizza">
+            <label data-i18n="businessName">Business Name</label>
+            <input type="text" id="merchantName" data-i18n-ph="businessNamePh" placeholder="e.g. Domino's Pizza">
 
-            <label>Logo URL (optional)</label>
+            <label data-i18n="logoUrl">Logo URL (optional)</label>
             <input type="text" id="merchantLogo" placeholder="https://...">
 
-            <label>Contact Name (optional)</label>
-            <input type="text" id="merchantContact" placeholder="Contact person">
+            <label data-i18n="contactName">Contact Name (optional)</label>
+            <input type="text" id="merchantContact" data-i18n-ph="contactNamePh" placeholder="Contact person">
 
-            <label>Contact Email (optional)</label>
+            <label data-i18n="contactEmail">Contact Email (optional)</label>
             <input type="text" id="merchantEmail" placeholder="name@business.com">
 
             <div style="display:flex;gap:10px;margin-top:12px;">
-              <button class="btn" onclick="createMerchant()">Save Merchant</button>
-              <button class="btn alt" onclick="toggleForm('createMerchantForm')">Cancel</button>
+              <button class="btn" onclick="createMerchant()" data-i18n="saveMerchant">Save Merchant</button>
+              <button class="btn alt" onclick="toggleForm('createMerchantForm')" data-i18n="cancel">Cancel</button>
             </div>
           </div>
 
           <div class="panel" style="margin-bottom:26px;">
-            <div id="merchantsContainer">Loading merchants...</div>
+            <div id="merchantsContainer">—</div>
           </div>
 
-          <!-- ===== CARD DESIGNS ===== -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <h3 style="margin:0;">BOGO Cards</h3>
-            <button class="btn" onclick="toggleForm('createDesignForm')">+ New Card</button>
+            <h3 style="margin:0;" data-i18n="bogoCards">BOGO Cards</h3>
+            <button class="btn" onclick="toggleForm('createDesignForm')" data-i18n="newCard">+ New Card</button>
           </div>
 
           <div id="createDesignForm" class="panel" style="display:none;margin-bottom:20px;">
-            <h3>Create BOGO Card</h3>
+            <h3 data-i18n="createBogoCard">Create BOGO Card</h3>
 
-            <label>Merchant</label>
+            <label data-i18n="merchant">Merchant</label>
             <select id="designMerchant" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;">
-              <option value="">Select a merchant...</option>
+              <option value="" data-i18n="selectMerchantOpt">Select a merchant...</option>
             </select>
 
-            <label>Card Name</label>
-            <input type="text" id="designName" placeholder="e.g. Domino's 16-Tab BOGO">
+            <label data-i18n="cardName">Card Name</label>
+            <input type="text" id="designName" data-i18n-ph="cardNamePh" placeholder="e.g. Domino's 16-Tab BOGO">
 
-            <label>Number of Coupon Tabs</label>
+            <label data-i18n="numTabs">Number of Coupon Tabs</label>
             <select id="designTabs" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;">
-              <option value="8">8 tabs</option>
-              <option value="16" selected>16 tabs</option>
-              <option value="32">32 tabs</option>
+              <option value="8" data-i18n="tabs8">8 tabs</option>
+              <option value="16" selected data-i18n="tabs16">16 tabs</option>
+              <option value="32" data-i18n="tabs32">32 tabs</option>
             </select>
 
-            <label>Price ($)</label>
+            <label data-i18n="price">Price ($)</label>
             <input type="number" id="designPrice" value="20" step="0.01">
 
-            <label>Team Share (%)</label>
+            <label data-i18n="teamSharePct">Team Share (%)</label>
             <input type="number" id="designShare" value="50" min="0" max="100">
-            <p style="margin:6px 0 0 0;font-size:11px;color:#888;" id="splitPreview">Team keeps $10.00 · Platform keeps $10.00</p>
+            <p style="margin:6px 0 0 0;font-size:11px;color:#888;" id="splitPreview"></p>
 
-            <label>Offer Text</label>
+            <label data-i18n="offerText">Offer Text</label>
             <input type="text" id="designOffer" value="Buy One Get One Free">
 
-            <label>Terms (optional)</label>
-            <input type="text" id="designTerms" placeholder="One per visit. Not valid with other offers.">
+            <label data-i18n="terms">Terms (optional)</label>
+            <input type="text" id="designTerms" data-i18n-ph="termsPh" placeholder="One per visit. Not valid with other offers.">
 
-            <label>Expires On (optional)</label>
+            <label data-i18n="expiresOn">Expires On (optional)</label>
             <input type="date" id="designExpires">
 
             <div style="display:flex;gap:10px;margin-top:12px;">
-              <button class="btn" onclick="createDesign()">Create Card</button>
-              <button class="btn alt" onclick="toggleForm('createDesignForm')">Cancel</button>
+              <button class="btn" onclick="createDesign()" data-i18n="createCardBtn">Create Card</button>
+              <button class="btn alt" onclick="toggleForm('createDesignForm')" data-i18n="cancel">Cancel</button>
             </div>
           </div>
 
           <div class="panel" style="margin-bottom:26px;">
-            <div id="designsContainer">Loading cards...</div>
+            <div id="designsContainer">—</div>
           </div>
 
-          <!-- ===== CAMPAIGNS ===== -->
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-            <h3 style="margin:0;">Campaigns</h3>
-            <button class="btn" onclick="toggleForm('createCampaignForm')">+ New Campaign</button>
+            <h3 style="margin:0;" data-i18n="campaigns">Campaigns</h3>
+            <button class="btn" onclick="toggleForm('createCampaignForm')" data-i18n="newCampaign">+ New Campaign</button>
           </div>
-          
+
           <div id="createCampaignForm" class="panel" style="display:none;margin-bottom:20px;">
-            <h3>Create New Campaign</h3>
-            
-            <label>Campaign Name</label>
-            <input type="text" id="campaignName" placeholder="Enter campaign name">
-            
-            <label>Campaign Goal ($)</label>
-            <input type="number" id="campaignGoal" placeholder="Enter goal amount">
-            
-            <label>Description</label>
-            <textarea id="campaignDesc" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;height:80px;"></textarea>
-            
+            <h3 data-i18n="createCampaignTitle">Create New Campaign</h3>
+
+            <label data-i18n="campaignName">Campaign Name</label>
+            <input type="text" id="campaignName" data-i18n-ph="campaignNamePh" placeholder="Enter campaign name">
+
+            <label data-i18n="campaignGoal">Campaign Goal ($)</label>
+            <input type="number" id="campaignGoal" data-i18n-ph="campaignGoalPh" placeholder="Enter goal amount">
+
+            <label data-i18n="description">Description</label>
+            <textarea id="campaignDesc" data-i18n-ph="descriptionPh" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;height:80px;"></textarea>
+
             <div style="display:flex;gap:10px;margin-top:12px;">
-              <button class="btn" onclick="createCampaign()">Create Campaign</button>
-              <button class="btn alt" onclick="toggleForm('createCampaignForm')">Cancel</button>
+              <button class="btn" onclick="createCampaign()" data-i18n="createCampaignBtn">Create Campaign</button>
+              <button class="btn alt" onclick="toggleForm('createCampaignForm')" data-i18n="cancel">Cancel</button>
             </div>
           </div>
-          
+
           <div id="campaignsList" class="panel">
-            <div id="campaignsContainer" style="margin-top:4px;">Loading campaigns...</div>
+            <div id="campaignsContainer" style="margin-top:4px;">—</div>
           </div>
-          
-          <button class="btn red" onclick="adminLogout()" style="margin-top:20px;width:100%;">Logout</button>
+
+          <button class="btn red" onclick="adminLogout()" style="margin-top:20px;width:100%;" data-i18n="logout">Logout</button>
         </div>
       </div>
     </section>
@@ -200,6 +195,212 @@
   </main>
 
   <script>
+    // ===== LANGUAGE =====
+
+    const STRINGS = {
+      en: {
+        tabAdmin:'Admin', tabPlayer:'Player', tabSupporter:'Supporter', tabMerchant:'Merchant',
+        tabSponsor:'Sponsor', tabCoach:'Coach',
+        heroKicker:'Basketball Money Platform',
+        heroTitle:'Raise Funds. Engage Fans. Win Together.',
+        heroBody:'A complete digital fundraising system for basketball teams. Create campaigns, sell peelable digital cards, track engagement, and reach your goals.',
+        supportTeam:'Support a Team', totalRaised:'Total Raised', activeCampaigns:'Active Campaigns',
+
+        adminPanel:'Admin Panel', adminLogin:'Admin Login',
+        adminLoginBody:'Enter your admin password to access campaign management.',
+        adminPassword:'Admin Password', adminPasswordPh:'Enter admin password', login:'Login', logout:'Logout',
+
+        merchants:'Merchants', newMerchant:'+ New Merchant', addMerchant:'Add Merchant',
+        businessName:'Business Name', businessNamePh:"e.g. Domino's Pizza",
+        logoUrl:'Logo URL (optional)', contactName:'Contact Name (optional)', contactNamePh:'Contact person',
+        contactEmail:'Contact Email (optional)', saveMerchant:'Save Merchant', cancel:'Cancel',
+
+        bogoCards:'BOGO Cards', newCard:'+ New Card', createBogoCard:'Create BOGO Card',
+        merchant:'Merchant', selectMerchantOpt:'Select a merchant...',
+        cardName:'Card Name', cardNamePh:"e.g. Domino's 16-Tab BOGO",
+        numTabs:'Number of Coupon Tabs', tabs8:'8 tabs', tabs16:'16 tabs', tabs32:'32 tabs',
+        price:'Price ($)', teamSharePct:'Team Share (%)', offerText:'Offer Text',
+        terms:'Terms (optional)', termsPh:'One per visit. Not valid with other offers.',
+        expiresOn:'Expires On (optional)', createCardBtn:'Create Card',
+        teamKeeps:'Team keeps', platformKeeps:'Platform keeps',
+
+        campaigns:'Campaigns', newCampaign:'+ New Campaign', createCampaignTitle:'Create New Campaign',
+        campaignName:'Campaign Name', campaignNamePh:'Enter campaign name',
+        campaignGoal:'Campaign Goal ($)', campaignGoalPh:'Enter goal amount',
+        description:'Description', descriptionPh:'Campaign description', createCampaignBtn:'Create Campaign',
+
+        badPassword:'Invalid password', loggedOut:'Logged out',
+        enterBusiness:'Enter a business name', merchantAdded:'Merchant added',
+        selectMerchant:'Select a merchant', enterCardName:'Enter a card name',
+        enterPrice:'Enter a price', cardCreated:'Card created',
+        enterPlayerName:'Enter player name', playerAdded:'Player added',
+        coachCopied:'Coach code copied', badCoachCode:'Invalid coach code',
+        fillFields:'Please fill in all required fields', campaignDeleted:'Campaign deleted',
+        redeemed:'Redeemed. Enjoy!',
+        confirmDeleteMerchant:'Delete this merchant?', confirmDeleteDesign:'Delete this card design?',
+        confirmRemovePlayer:'Remove this player?',
+        confirmDeleteCampaign:'Are you sure? This will delete all associated data.',
+        confirmPeel:'Peel this coupon? Do this at the register — it cannot be resealed.',
+        staffPrompt:'Staff: enter your name or initials to redeem',
+        buyerPrompt:'Your name (so the player knows who supported them):',
+        checkoutCancelled:'Checkout cancelled — nothing was charged.',
+        merchantHasCards:'Could not delete — this merchant probably has cards attached.',
+        designHasCards:'Could not delete — cards have already been sold with this design. Deactivate it instead.',
+
+        noMerchants:'No merchants yet. Add one before creating a card.',
+        noDesigns:'No cards yet. Add a merchant, then create a card.',
+        noCampaigns:'No campaigns yet. Create one to get started.',
+        noPlayers:'No players yet', loading:'Loading...',
+        noCardsAvailable:'No cards available yet.',
+        noCardsSold:'No cards sold yet. Share your link to get started.',
+        noContact:'No contact on file', noDescription:'No description',
+        merchantWord:'Merchant', supporterWord:'Supporter', tabsWord:'tabs', couponTabs:'coupon tabs',
+        teamWord:'team', platformWord:'platform', expires:'Expires',
+        active:'Active', inactive:'Inactive', activate:'Activate', deactivate:'Deactivate',
+        delete:'Delete', buy:'Buy', copyLink:'Copy Link', remove:'Remove', redeem:'Redeem',
+        copy:'Copy', coachCode:'Coach Code', goal:'Goal',
+
+        noPlayerLink:'No player link',
+        noPlayerLinkBody:'This page opens from a personal link. Ask your coach to send you your link.',
+        playerNotFound:'Player not found',
+        playerNotFoundBody:'That link may be out of date. Ask your coach for a new one.',
+        raisedForTeam:'Raised for team', cardsSoldStat:'Cards sold', support:'Support',
+        cardsSold:'Cards Sold', copyShareLink:'Copy My Share Link', teamShare:'Team share',
+
+        noCard:'No card',
+        noCardBody:"Open your card using the link you received after buying. To buy one, use a player's link.",
+        cardNotFound:'Card not found',
+        cardNotFoundBody:'Check the link, or contact whoever sold you this card.',
+        tabWord:'Tab', tapToPeel:'Tap to peel', used:'Used',
+        unused:'Unused', redeemedStat:'Redeemed', yourCoupons:'Your Coupons',
+        couponHelp:'Peel a tab at the register, then hand your phone to the cashier to redeem it.',
+        saveCardLink:'Save My Card Link', cardWord:'Card', supporting:'supporting',
+        paymentReceived:'Payment received', buildingCard:'Building your card...',
+        cardSlow:'Your card is taking longer than usual to build. It will arrive shortly — refresh this page in a minute, or contact us with your receipt.'
+      },
+      es: {
+        tabAdmin:'Admin', tabPlayer:'Jugador', tabSupporter:'Padrino', tabMerchant:'Comercio',
+        tabSponsor:'Auspiciador', tabCoach:'Entrenador',
+        heroKicker:'Plataforma Basketball Money',
+        heroTitle:'Recauda fondos. Conecta con tu gente. Ganen juntos.',
+        heroBody:'Un sistema digital completo de recaudación para equipos de baloncesto. Crea campañas, vende tarjetas digitales de cupones, sigue el progreso y alcanza tu meta.',
+        supportTeam:'Apoya a un equipo', totalRaised:'Total recaudado', activeCampaigns:'Campañas activas',
+
+        adminPanel:'Panel de administración', adminLogin:'Acceso de administrador',
+        adminLoginBody:'Entra tu contraseña de administrador para manejar las campañas.',
+        adminPassword:'Contraseña de administrador', adminPasswordPh:'Entra la contraseña', login:'Entrar', logout:'Cerrar sesión',
+
+        merchants:'Comercios', newMerchant:'+ Nuevo comercio', addMerchant:'Añadir comercio',
+        businessName:'Nombre del negocio', businessNamePh:'ej. Domino\u2019s Pizza',
+        logoUrl:'URL del logo (opcional)', contactName:'Nombre de contacto (opcional)', contactNamePh:'Persona de contacto',
+        contactEmail:'Correo de contacto (opcional)', saveMerchant:'Guardar comercio', cancel:'Cancelar',
+
+        bogoCards:'Tarjetas BOGO', newCard:'+ Nueva tarjeta', createBogoCard:'Crear tarjeta BOGO',
+        merchant:'Comercio', selectMerchantOpt:'Selecciona un comercio...',
+        cardName:'Nombre de la tarjeta', cardNamePh:'ej. Domino\u2019s BOGO de 16 cupones',
+        numTabs:'Cantidad de cupones', tabs8:'8 cupones', tabs16:'16 cupones', tabs32:'32 cupones',
+        price:'Precio ($)', teamSharePct:'Porción del equipo (%)', offerText:'Texto de la oferta',
+        terms:'Términos (opcional)', termsPh:'Uno por visita. No válido con otras ofertas.',
+        expiresOn:'Fecha de expiración (opcional)', createCardBtn:'Crear tarjeta',
+        teamKeeps:'El equipo recibe', platformKeeps:'La plataforma recibe',
+
+        campaigns:'Campañas', newCampaign:'+ Nueva campaña', createCampaignTitle:'Crear nueva campaña',
+        campaignName:'Nombre de la campaña', campaignNamePh:'Entra el nombre',
+        campaignGoal:'Meta de la campaña ($)', campaignGoalPh:'Entra la meta',
+        description:'Descripción', descriptionPh:'Descripción de la campaña', createCampaignBtn:'Crear campaña',
+
+        badPassword:'Contraseña incorrecta', loggedOut:'Sesión cerrada',
+        enterBusiness:'Entra el nombre del negocio', merchantAdded:'Comercio añadido',
+        selectMerchant:'Selecciona un comercio', enterCardName:'Entra el nombre de la tarjeta',
+        enterPrice:'Entra un precio', cardCreated:'Tarjeta creada',
+        enterPlayerName:'Entra el nombre del jugador', playerAdded:'Jugador añadido',
+        coachCopied:'Código del entrenador copiado', badCoachCode:'Código inválido',
+        fillFields:'Por favor completa todos los campos', campaignDeleted:'Campaña eliminada',
+        redeemed:'¡Redimido. Que lo disfrutes!',
+        confirmDeleteMerchant:'¿Eliminar este comercio?', confirmDeleteDesign:'¿Eliminar esta tarjeta?',
+        confirmRemovePlayer:'¿Eliminar este jugador?',
+        confirmDeleteCampaign:'¿Estás seguro? Esto elimina toda la información relacionada.',
+        confirmPeel:'¿Despegar este cupón? Hazlo en el mostrador — no se puede volver a sellar.',
+        staffPrompt:'Empleado: entra tu nombre o iniciales para redimir',
+        buyerPrompt:'Tu nombre (para que el jugador sepa quién lo apoyó):',
+        checkoutCancelled:'Compra cancelada — no se cobró nada.',
+        merchantHasCards:'No se pudo eliminar — este comercio tiene tarjetas asociadas.',
+        designHasCards:'No se pudo eliminar — ya se vendieron tarjetas con este diseño. Desactívala en su lugar.',
+
+        noMerchants:'Todavía no hay comercios. Añade uno antes de crear una tarjeta.',
+        noDesigns:'Todavía no hay tarjetas. Añade un comercio y luego crea una tarjeta.',
+        noCampaigns:'Todavía no hay campañas. Crea una para empezar.',
+        noPlayers:'Todavía no hay jugadores', loading:'Cargando...',
+        noCardsAvailable:'Todavía no hay tarjetas disponibles.',
+        noCardsSold:'Todavía no has vendido tarjetas. Comparte tu enlace para empezar.',
+        noContact:'Sin contacto registrado', noDescription:'Sin descripción',
+        merchantWord:'Comercio', supporterWord:'Padrino', tabsWord:'cupones', couponTabs:'cupones',
+        teamWord:'equipo', platformWord:'plataforma', expires:'Expira',
+        active:'Activa', inactive:'Inactiva', activate:'Activar', deactivate:'Desactivar',
+        delete:'Eliminar', buy:'Comprar', copyLink:'Copiar enlace', remove:'Eliminar', redeem:'Redimir',
+        copy:'Copiar', coachCode:'Código del entrenador', goal:'Meta',
+
+        noPlayerLink:'Sin enlace de jugador',
+        noPlayerLinkBody:'Esta página se abre con un enlace personal. Pídele tu enlace a tu entrenador.',
+        playerNotFound:'Jugador no encontrado',
+        playerNotFoundBody:'Puede que el enlace esté vencido. Pídele uno nuevo a tu entrenador.',
+        raisedForTeam:'Recaudado para el equipo', cardsSoldStat:'Tarjetas vendidas', support:'Apoya a',
+        cardsSold:'Tarjetas vendidas', copyShareLink:'Copiar mi enlace', teamShare:'Para el equipo',
+
+        noCard:'Sin tarjeta',
+        noCardBody:'Abre tu tarjeta con el enlace que recibiste al comprar. Para comprar una, usa el enlace de un jugador.',
+        cardNotFound:'Tarjeta no encontrada',
+        cardNotFoundBody:'Verifica el enlace o comunícate con quien te vendió la tarjeta.',
+        tabWord:'Cupón', tapToPeel:'Toca para despegar', used:'Usado',
+        unused:'Sin usar', redeemedStat:'Redimidos', yourCoupons:'Tus cupones',
+        couponHelp:'Despega un cupón en el mostrador y entrégale el celular al cajero para redimirlo.',
+        saveCardLink:'Guardar mi enlace', cardWord:'Tarjeta', supporting:'apoyando a',
+        paymentReceived:'Pago recibido', buildingCard:'Creando tu tarjeta...',
+        cardSlow:'Tu tarjeta está tardando más de lo normal. Llegará pronto — refresca esta página en un minuto o comunícate con nosotros con tu recibo.'
+      }
+    };
+
+    let LANG = localStorage.getItem('bm_lang') || ((navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en');
+
+    function t(key) {
+      return (STRINGS[LANG] && STRINGS[LANG][key]) || STRINGS.en[key] || key;
+    }
+    const t2 = t;
+
+    function applyLang() {
+      document.documentElement.lang = LANG;
+
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        el.textContent = t(el.getAttribute('data-i18n'));
+      });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+        el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph')));
+      });
+
+      const btn = document.getElementById('langToggle');
+      if (btn) btn.textContent = LANG === 'en' ? 'ES' : 'EN';
+
+      if (typeof updateSplitPreview === 'function') updateSplitPreview();
+    }
+
+    function toggleLang() {
+      LANG = (LANG === 'en') ? 'es' : 'en';
+      localStorage.setItem('bm_lang', LANG);
+      applyLang();
+      redrawAll();
+    }
+
+    // repaint whatever is currently on screen in the new language
+    function redrawAll() {
+      if (document.getElementById('adminDashboard') &&
+          document.getElementById('adminDashboard').style.display !== 'none') {
+        loadAdminData();
+      }
+      if (document.getElementById('playerContent')) loadPlayerView();
+      if (document.getElementById('supporterContent') && getCardTokenFromUrl()) loadSupporterCard();
+      if (document.getElementById('playersList')) loadCoachDashboard();
+    }
+
     // Supabase config
     const SUPABASE_URL = 'https://sdaphocueugzfvjovuxd.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
@@ -260,7 +461,7 @@
         showAdminDashboard();
         loadAdminData();
       } else {
-        alert('Invalid password');
+        alert(t('badPassword'));
       }
     }
 
@@ -268,7 +469,7 @@
       sessionStorage.removeItem('bm_admin_logged_in');
       document.getElementById('adminLoginScreen').style.display='block';
       document.getElementById('adminDashboard').style.display='none';
-      alert('Logged out');
+      alert(t('loggedOut'));
     }
 
     function showAdminDashboard() {
@@ -291,7 +492,7 @@
 
     async function createMerchant() {
       const name = document.getElementById('merchantName').value.trim();
-      if (!name) { alert('Enter a business name'); return; }
+      if (!name) { alert(t('enterBusiness')); return; }
 
       try {
         await supabaseQuery('merchants', 'POST', {
@@ -308,7 +509,7 @@
         document.getElementById('createMerchantForm').style.display = 'none';
 
         loadMerchants();
-        alert('Merchant added');
+        alert(t('merchantAdded'));
       } catch (error) {
         console.error('Error:', error);
         alert('Error: ' + error.message);
@@ -328,7 +529,7 @@
         }
 
         if (!merchants || merchants.length === 0) {
-          box.innerHTML = '<p style="color:#aaa;">No merchants yet. Add one before creating a card.</p>';
+          box.innerHTML = '<p style="color:#aaa;">' + t('noMerchants') + '</p>';
           return;
         }
 
@@ -338,10 +539,10 @@
               ${m.logo_url ? `<img src="${m.logo_url}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">` : ''}
               <div>
                 <p style="margin:0;font-weight:950;">${m.name}</p>
-                <p style="margin:3px 0 0 0;font-size:11px;color:#888;">${m.contact_email || 'No contact on file'}</p>
+                <p style="margin:3px 0 0 0;font-size:11px;color:#888;">${m.contact_email || t('noContact')}</p>
               </div>
             </div>
-            <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
+            <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
           </div>
         `).join('');
       } catch (error) {
@@ -351,12 +552,12 @@
     }
 
     async function deleteMerchant(id) {
-      if (!confirm('Delete this merchant?')) return;
+      if (!confirm(t('confirmDeleteMerchant'))) return;
       try {
         await supabaseQuery(`merchants?id=eq.${id}`, 'DELETE');
         loadMerchants();
       } catch (error) {
-        alert('Could not delete — this merchant probably has cards attached.');
+        alert(t('merchantHasCards'));
       }
     }
 
@@ -367,7 +568,7 @@
       const share = parseFloat(document.getElementById('designShare').value) || 0;
       const team = price * (share / 100);
       const el = document.getElementById('splitPreview');
-      if (el) el.textContent = `Team keeps ${money(team)} · Platform keeps ${money(price - team)}`;
+      if (el) el.textContent = `${t('teamKeeps')} ${money(team)} · ${t('platformKeeps')} ${money(price - team)}`;
     }
 
     async function createDesign() {
@@ -376,9 +577,9 @@
       const price = parseFloat(document.getElementById('designPrice').value);
       const share = parseInt(document.getElementById('designShare').value, 10);
 
-      if (!merchantId) { alert('Select a merchant'); return; }
-      if (!name) { alert('Enter a card name'); return; }
-      if (!price || price <= 0) { alert('Enter a price'); return; }
+      if (!merchantId) { alert(t('selectMerchant')); return; }
+      if (!name) { alert(t('enterCardName')); return; }
+      if (!price || price <= 0) { alert(t('enterPrice')); return; }
 
       try {
         await supabaseQuery('card_designs', 'POST', {
@@ -397,7 +598,7 @@
         document.getElementById('createDesignForm').style.display = 'none';
 
         loadDesigns();
-        alert('Card created');
+        alert(t('cardCreated'));
       } catch (error) {
         console.error('Error:', error);
         alert('Error: ' + error.message);
@@ -411,7 +612,7 @@
         const box = document.getElementById('designsContainer');
 
         if (!designs || designs.length === 0) {
-          box.innerHTML = '<p style="color:#aaa;">No cards yet. Add a merchant, then create a card.</p>';
+          box.innerHTML = '<p style="color:#aaa;">' + t('noDesigns') + '</p>';
           return;
         }
 
@@ -422,17 +623,17 @@
               <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
                 <div style="flex:1;">
                   <p style="margin:0;font-weight:950;font-size:16px;">${d.name}</p>
-                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.merchants ? d.merchants.name : 'Merchant'} · ${d.tab_count} tabs · ${d.offer_text}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.merchants ? d.merchants.name : t('merchantWord')} · ${d.tab_count} ${t('tabsWord')} · ${d.offer_text}</p>
                   <p style="margin:6px 0 0 0;font-size:13px;">
                     <span style="color:var(--gold);font-weight:950;">${money(d.price)}</span>
-                    <span style="color:#888;"> — team ${money(team)} / platform ${money(Number(d.price) - team)}</span>
+                    <span style="color:#888;"> — ${t('teamWord')} ${money(team)} / ${t('platformWord')} ${money(Number(d.price) - team)}</span>
                   </p>
-                  ${d.expires_on ? `<p style="margin:4px 0 0 0;font-size:11px;color:#888;">Expires ${d.expires_on}</p>` : ''}
-                  <p style="margin:6px 0 0 0;font-size:11px;color:${d.active === false ? '#f66' : '#6f6'};">${d.active === false ? 'Inactive' : 'Active'}</p>
+                  ${d.expires_on ? `<p style="margin:4px 0 0 0;font-size:11px;color:#888;">${t('expires')} ${d.expires_on}</p>` : ''}
+                  <p style="margin:6px 0 0 0;font-size:11px;color:${d.active === false ? '#f66' : '#6f6'};">${d.active === false ? t('inactive') : t('active')}</p>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-                  <button class="btn alt" onclick="toggleDesignActive('${d.id}', ${d.active === false})" style="padding:6px 10px;font-size:11px;">${d.active === false ? 'Activate' : 'Deactivate'}</button>
-                  <button class="btn red" onclick="deleteDesign('${d.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
+                  <button class="btn alt" onclick="toggleDesignActive('${d.id}', ${d.active === false})" style="padding:6px 10px;font-size:11px;">${d.active === false ? t('activate') : t('deactivate')}</button>
+                  <button class="btn red" onclick="deleteDesign('${d.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
                 </div>
               </div>
             </div>
@@ -454,12 +655,12 @@
     }
 
     async function deleteDesign(id) {
-      if (!confirm('Delete this card design?')) return;
+      if (!confirm(t('confirmDeleteDesign'))) return;
       try {
         await supabaseQuery(`card_designs?id=eq.${id}`, 'DELETE');
         loadDesigns();
       } catch (error) {
-        alert('Could not delete — cards have already been sold with this design. Deactivate it instead.');
+        alert(t('designHasCards'));
       }
     }
 
@@ -471,7 +672,7 @@
       const desc = document.getElementById('campaignDesc').value;
       
       if (!name || !goal) {
-        alert('Please fill in all required fields');
+        alert(t('fillFields'));
         return;
       }
       
@@ -514,7 +715,7 @@
         const campaigns = await supabaseQuery('campaigns', 'GET', null, '?order=created_at.desc');
         
         if (!campaigns || campaigns.length === 0) {
-          document.getElementById('campaignsContainer').innerHTML = '<p style="color:#aaa;">No campaigns yet. Create one to get started.</p>';
+          document.getElementById('campaignsContainer').innerHTML = '<p style="color:#aaa;">' + t('noCampaigns') + '</p>';
           return;
         }
         
@@ -528,15 +729,15 @@
               <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
                 <div style="flex:1;">
                   <p style="margin:0;font-weight:950;font-size:16px;">${c.name}</p>
-                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">Goal: $${c.goal}</p>
-                  <p style="margin:4px 0 0 0;font-size:12px;color:#888;">${c.description || 'No description'}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${t('goal')}: $${c.goal}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#888;">${c.description || t('noDescription')}</p>
                   <p style="margin:8px 0 0 0;padding:8px;background:#1a1420;border-radius:6px;font-family:monospace;font-size:11px;color:var(--gold);border:1px solid #ffffff1a;">
-                    Coach Code: <strong>${coachCode}</strong>
-                    <button onclick="copyToClipboard('${coachCode}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">Copy</button>
+                    ${t('coachCode')}: <strong>${coachCode}</strong>
+                    <button onclick="copyToClipboard('${coachCode}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">${t('copy')}</button>
                   </p>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
-                  <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
+                  <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
                 </div>
               </div>
             </div>
@@ -552,15 +753,15 @@
 
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text);
-      alert('Coach code copied!');
+      alert(t('coachCopied'));
     }
 
     async function deleteCampaign(campaignId) {
-      if (!confirm('Are you sure? This will delete all associated data.')) return;
+      if (!confirm(t('confirmDeleteCampaign'))) return;
       
       try {
         await supabaseQuery(`campaigns?id=eq.${campaignId}`, 'DELETE');
-        alert('Campaign deleted');
+        alert(t('campaignDeleted'));
         loadCampaigns();
       } catch (error) {
         console.error('Error:', error);
@@ -577,7 +778,7 @@
         const coaches = await supabaseQuery('coaches', 'GET', null, `?access_code=eq.${code}`);
         
         if (!coaches || coaches.length === 0) {
-          alert('Invalid coach code');
+          alert(t('badCoachCode'));
           return;
         }
         
@@ -608,7 +809,7 @@
         
         const playersList = document.getElementById('playersList');
         if (!players || players.length === 0) {
-          playersList.innerHTML = '<p style="color:#aaa;">No players yet</p>';
+          playersList.innerHTML = '<p style="color:#aaa;">' + t('noPlayers') + '</p>';
           return;
         }
 
@@ -627,8 +828,8 @@
               <span style="color:var(--gold);font-weight:950;margin-left:8px;">${money(raisedBy[p.id] || 0)}</span>
             </div>
             <span style="display:flex;gap:6px;flex-shrink:0;">
-              <button class="btn" onclick="copyPlayerLink('${p.id}')" style="padding:5px 10px;font-size:11px;">Copy Link</button>
-              <button class="btn alt" onclick="removePlayer('${p.id}')" style="padding:5px 10px;font-size:11px;">Remove</button>
+              <button class="btn" onclick="copyPlayerLink('${p.id}')" style="padding:5px 10px;font-size:11px;">${t('copyLink')}</button>
+              <button class="btn alt" onclick="removePlayer('${p.id}')" style="padding:5px 10px;font-size:11px;">${t('remove')}</button>
             </span>
           </div>
         `).join('');
@@ -651,7 +852,7 @@
     async function addPlayer() {
       const name = document.getElementById('playerName').value;
       if (!name) {
-        alert('Enter player name');
+        alert(t('enterPlayerName'));
         return;
       }
       
@@ -665,7 +866,7 @@
         
         document.getElementById('playerName').value = '';
         loadCoachDashboard();
-        alert('Player added!');
+        alert(t('playerAdded'));
       } catch (error) {
         console.error('Error:', error);
         alert('Error: ' + error.message);
@@ -673,7 +874,7 @@
     }
 
     async function removePlayer(playerId) {
-      if (!confirm('Remove this player?')) return;
+      if (!confirm(t('confirmRemovePlayer'))) return;
       try {
         await supabaseQuery(`players?id=eq.${playerId}`, 'DELETE');
         loadCoachDashboard();
@@ -696,18 +897,18 @@
         if (!playerId) {
           box.innerHTML = `
             <div class="panel">
-              <h3>No player link</h3>
-              <p style="color:#aaa;">This page opens from a personal link. Ask your coach to send you your link.</p>
+              <h3>${t('noPlayerLink')}</h3>
+              <p style="color:#aaa;">${t('noPlayerLinkBody')}</p>
             </div>`;
           return;
         }
 
-        box.innerHTML = '<p style="color:#aaa;">Loading your page...</p>';
+        box.innerHTML = '<p style="color:#aaa;">' + t('loading') + '</p>';
 
         try {
           const players = await supabaseQuery('players', 'GET', null, `?id=eq.${playerId}`);
           if (!players || players.length === 0) {
-            box.innerHTML = '<div class="panel"><h3>Player not found</h3><p style="color:#aaa;">That link may be out of date. Ask your coach for a new one.</p></div>';
+            box.innerHTML = `<div class="panel"><h3>${t('playerNotFound')}</h3><p style="color:#aaa;">${t('playerNotFoundBody')}</p></div>`;
             return;
           }
           const player = players[0];
@@ -724,24 +925,24 @@
             '?active=eq.true&select=*,merchants(name)&order=created_at.desc');
 
           const buyHtml = (designs || []).length === 0
-            ? '<p style="color:#aaa;">No cards available yet.</p>'
+            ? '<p style="color:#aaa;">' + t('noCardsAvailable') + '</p>'
             : designs.map(d => `
                 <div style="padding:14px;background:#0e0a11;border-radius:12px;margin:10px 0;border:1px solid #ffffff14;display:flex;justify-content:space-between;align-items:center;gap:12px;">
                   <div>
                     <p style="margin:0;font-weight:950;">${d.merchants ? d.merchants.name : d.name}</p>
-                    <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.tab_count} coupon tabs · ${d.offer_text}</p>
+                    <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.tab_count} ${t('couponTabs')} · ${d.offer_text}</p>
                     <p style="margin:4px 0 0 0;font-size:12px;color:var(--gold);font-weight:950;">${money(d.price)}</p>
                   </div>
-                  <button class="btn" onclick="buyCard('${d.id}', '${player.campaign_id}', '${player.id}')" style="flex-shrink:0;">Buy</button>
+                  <button class="btn" onclick="buyCard('${d.id}', '${player.campaign_id}', '${player.id}')" style="flex-shrink:0;">${t('buy')}</button>
                 </div>`).join('');
 
           const soldHtml = sold.length === 0
-            ? '<p style="color:#aaa;">No cards sold yet. Share your link to get started.</p>'
+            ? '<p style="color:#aaa;">' + t('noCardsSold') + '</p>'
             : sold.map(c => `
                 <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;border:1px solid #ffffff14;">
                   <p style="margin:0;font-weight:950;font-family:monospace;color:var(--gold);">${c.card_token || '—'}</p>
-                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${c.card_designs ? c.card_designs.name : 'Card'} · ${c.buyer_name || 'Supporter'}</p>
-                  <p style="margin:4px 0 0 0;font-size:12px;">Team share: <strong style="color:var(--gold);">${money(c.team_amount)}</strong></p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${c.card_designs ? c.card_designs.name : 'Card'} · ${c.buyer_name || t('supporterWord')}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;">${t('teamShare')}: <strong style="color:var(--gold);">${money(c.team_amount)}</strong></p>
                 </div>`).join('');
 
           box.innerHTML = `
@@ -752,26 +953,26 @@
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
               <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Raised for team</p>
+                <p style="margin:0;font-size:12px;color:#aaa;">${t('raisedForTeam')}</p>
                 <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;color:var(--gold);">${money(raised)}</p>
               </div>
               <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Cards sold</p>
+                <p style="margin:0;font-size:12px;color:#aaa;">${t('cardsSoldStat')}</p>
                 <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;">${sold.length}</p>
               </div>
             </div>
 
             <div class="panel" style="margin-bottom:16px;">
-              <h3>Support ${player.name}</h3>
+              <h3>${t('support')} ${player.name}</h3>
               <div style="margin-top:12px;">${buyHtml}</div>
             </div>
 
             <div class="panel">
-              <h3>Cards Sold</h3>
+              <h3>${t('cardsSold')}</h3>
               <div style="margin-top:12px;">${soldHtml}</div>
             </div>
 
-            <button class="btn alt" onclick="sharePlayerLink()" style="margin-top:18px;">Copy My Share Link</button>
+            <button class="btn alt" onclick="sharePlayerLink()" style="margin-top:18px;">${t('copyShareLink')}</button>
           `;
         } catch (error) {
           console.error('Error loading player view:', error);
@@ -794,7 +995,7 @@
     // ===== BUY (Stripe Checkout) =====
 
     async function buyCard(designId, campaignId, playerId) {
-      const buyerName = prompt('Your name (so the player knows who supported them):', '');
+      const buyerName = prompt(t('buyerPrompt'), '');
       if (buyerName === null) return;
 
       const base = window.location.origin + window.location.pathname;
@@ -807,7 +1008,7 @@
             design_id: designId,
             campaign_id: campaignId,
             player_id: playerId,
-            buyer_name: buyerName || 'Supporter',
+            buyer_name: buyerName || t('supporterWord'),
             success_url: `${base}?player=${playerId}&purchase=success`,
             cancel_url: `${base}?player=${playerId}&purchase=cancelled`
           })
@@ -836,20 +1037,20 @@
         if (!token) {
           box.innerHTML = `
             <div class="panel">
-              <h3>No card</h3>
-              <p style="color:#aaa;">Open your card using the link you received after buying. To buy one, use a player's link.</p>
+              <h3>${t('noCard')}</h3>
+              <p style="color:#aaa;">${t('noCardBody')}</p>
             </div>`;
           return;
         }
 
-        box.innerHTML = '<p style="color:#aaa;">Loading your card...</p>';
+        box.innerHTML = '<p style="color:#aaa;">' + t('loading') + '</p>';
 
         try {
           const cards = await supabaseQuery('cards', 'GET', null,
             `?card_token=eq.${token}&select=*,card_designs(name,offer_text,terms,expires_on,merchants(name,logo_url)),players(name),campaigns(name)`);
 
           if (!cards || cards.length === 0) {
-            box.innerHTML = '<div class="panel"><h3>Card not found</h3><p style="color:#aaa;">Check the link, or contact whoever sold you this card.</p></div>';
+            box.innerHTML = `<div class="panel"><h3>${t('cardNotFound')}</h3><p style="color:#aaa;">${t('cardNotFoundBody')}</p></div>`;
             return;
           }
 
@@ -869,23 +1070,23 @@
               return `
                 <div style="padding:16px 10px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelTab('${t.id}')">
                   <p style="margin:0;font-size:22px;">🔒</p>
-                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">Tab ${t.tab_number}</p>
-                  <p style="margin:4px 0 0 0;font-size:11px;color:var(--gold);font-weight:950;">Tap to peel</p>
+                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
+                  <p style="margin:4px 0 0 0;font-size:11px;color:var(--gold);font-weight:950;">${t2('tapToPeel')}</p>
                 </div>`;
             }
             if (t.status === 'peeled') {
               return `
                 <div style="padding:16px 10px;background:linear-gradient(145deg,#1c3a1c,#0d110d);border:1px solid #6f6a;border-radius:15px;text-align:center;">
                   <p style="margin:0;font-size:22px;">✓</p>
-                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">Tab ${t.tab_number}</p>
-                  <button class="btn" onclick="redeemTab('${t.id}')" style="margin-top:8px;padding:5px 10px;font-size:11px;">Redeem</button>
+                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
+                  <button class="btn" onclick="redeemTab('${t.id}')" style="margin-top:8px;padding:5px 10px;font-size:11px;">${t2('redeem')}</button>
                 </div>`;
             }
             return `
               <div style="padding:16px 10px;background:#0e0a11;border:1px solid #ffffff14;border-radius:15px;text-align:center;opacity:.55;">
                 <p style="margin:0;font-size:22px;">✅</p>
-                <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">Tab ${t.tab_number}</p>
-                <p style="margin:4px 0 0 0;font-size:10px;color:#888;">Used</p>
+                <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
+                <p style="margin:4px 0 0 0;font-size:10px;color:#888;">${t2('used')}</p>
               </div>`;
           }).join('');
 
@@ -899,32 +1100,32 @@
                 </div>
               </div>
               <p style="margin:12px 0 0 0;font-size:12px;color:#aaa;">
-                Card <strong style="font-family:monospace;color:var(--gold);">${card.card_token}</strong>
-                ${card.players ? ` · supporting ${card.players.name}` : ''}
+                ${t('cardWord')} <strong style="font-family:monospace;color:var(--gold);">${card.card_token}</strong>
+                ${card.players ? ` · ${t('supporting')} ${card.players.name}` : ''}
                 ${card.campaigns ? ` · ${card.campaigns.name}` : ''}
               </p>
-              ${design.expires_on ? `<p style="margin:6px 0 0 0;font-size:12px;color:#888;">Expires ${design.expires_on}</p>` : ''}
+              ${design.expires_on ? `<p style="margin:6px 0 0 0;font-size:12px;color:#888;">${t('expires')} ${design.expires_on}</p>` : ''}
               ${design.terms ? `<p style="margin:6px 0 0 0;font-size:11px;color:#888;">${design.terms}</p>` : ''}
             </div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px;">
               <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Unused</p>
+                <p style="margin:0;font-size:12px;color:#aaa;">${t('unused')}</p>
                 <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;color:var(--gold);">${left}</p>
               </div>
               <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Redeemed</p>
+                <p style="margin:0;font-size:12px;color:#aaa;">${t('redeemedStat')}</p>
                 <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;">${used}</p>
               </div>
             </div>
 
             <div class="panel">
-              <h3>Your Coupons</h3>
-              <p style="margin:6px 0 14px 0;font-size:12px;color:#888;">Peel a tab at the register, then hand your phone to the cashier to redeem it.</p>
+              <h3>${t('yourCoupons')}</h3>
+              <p style="margin:6px 0 14px 0;font-size:12px;color:#888;">${t('couponHelp')}</p>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">${tabsHtml}</div>
             </div>
 
-            <button class="btn alt" onclick="saveCardLink()" style="margin-top:18px;">Save My Card Link</button>
+            <button class="btn alt" onclick="saveCardLink()" style="margin-top:18px;">${t('saveCardLink')}</button>
           `;
         } catch (error) {
           console.error('Error loading card:', error);
@@ -934,7 +1135,7 @@
     }
 
     async function peelTab(tabId) {
-      if (!confirm('Peel this coupon? Do this at the register — it cannot be resealed.')) return;
+      if (!confirm(t('confirmPeel'))) return;
       try {
         await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
           status: 'peeled',
@@ -948,7 +1149,7 @@
     }
 
     async function redeemTab(tabId) {
-      const staff = prompt('Staff: enter your name or initials to redeem', '');
+      const staff = prompt(t('staffPrompt'), '');
       if (staff === null) return;
       try {
         await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
@@ -957,7 +1158,7 @@
           redeemed_by: staff || 'Staff'
         });
         loadSupporterCard();
-        alert('Redeemed. Enjoy!');
+        alert(t('redeemed'));
       } catch (error) {
         console.error('Error:', error);
         alert('Error: ' + error.message);
@@ -978,7 +1179,7 @@
     // After checkout, wait for the webhook to create the card, then open it
     async function waitForNewCard(sessionId, tries = 15) {
       whenReady('supporterContent', async (box) => {
-        box.innerHTML = '<div class="panel"><h3>Payment received</h3><p style="color:#aaa;">Building your card...</p></div>';
+        box.innerHTML = `<div class="panel"><h3>${t('paymentReceived')}</h3><p style="color:#aaa;">${t('buildingCard')}</p></div>`;
       });
 
       for (let i = 0; i < tries; i++) {
@@ -996,14 +1197,14 @@
       }
 
       whenReady('supporterContent', (box) => {
-        box.innerHTML = '<div class="panel"><h3>Payment received</h3><p style="color:#aaa;">Your card is taking longer than usual to build. It will arrive shortly — refresh this page in a minute, or contact us with your receipt.</p></div>';
+        box.innerHTML = `<div class="panel"><h3>${t('paymentReceived')}</h3><p style="color:#aaa;">${t('cardSlow')}</p></div>`;
       });
     }
 
     // ===== BUY (Stripe Checkout) =====
 
     async function buyCard(designId, campaignId, playerId) {
-      const buyerName = prompt('Your name (so the player knows who supported them):', '');
+      const buyerName = prompt(t('buyerPrompt'), '');
       if (buyerName === null) return;
 
       const base = window.location.origin + window.location.pathname;
@@ -1016,7 +1217,7 @@
             design_id: designId,
             campaign_id: campaignId,
             player_id: playerId,
-            buyer_name: buyerName || 'Supporter',
+            buyer_name: buyerName || t('supporterWord'),
             success_url: `${base}?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${base}?player=${playerId}&purchase=cancelled`
           })
@@ -1066,6 +1267,7 @@
     document.addEventListener('DOMContentLoaded', function () {
       const params = new URLSearchParams(window.location.search);
 
+      applyLang();
       loadHeroStats();
 
       ['designPrice', 'designShare'].forEach(id => {
@@ -1074,7 +1276,7 @@
       });
 
       if (params.get('purchase') === 'cancelled') {
-        alert('Checkout cancelled — nothing was charged.');
+        alert(t('checkoutCancelled'));
       }
 
       // Coming back from Stripe: find the new card and open it
