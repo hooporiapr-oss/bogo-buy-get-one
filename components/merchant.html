@@ -1,1 +1,41 @@
+<div class="wrap">
+  <h2>Merchant</h2>
+  <div class="panel">
+    <h3>Redeem Cards</h3>
+    
+    <p>Scan or enter card codes to redeem and track purchases.</p>
+    
+    <label>Card/Token Code</label>
+    <input type="text" id="merchantCode" placeholder="Scan or enter card code">
+    
+    <button class="btn" onclick="redeemCard()">Redeem Card</button>
+    
+    <div id="merchantResult" style="display:none;margin-top:20px;">
+      <div class="panel" style="background:#ffffff08;padding:15px;">
+        <h4>Redemption Details</h4>
+        <p><strong>Card ID:</strong> <span id="resultCardId">-</span></p>
+        <p><strong>Value:</strong> <span id="resultValue">$0</span></p>
+        <p><strong>Status:</strong> <span id="resultStatus">Valid</span></p>
+        <button class="btn alt" onclick="confirmRedemption()" style="margin-top:10px;">Confirm Redemption</button>
+      </div>
+    </div>
+  </div>
+</div>
 
+<script>
+function redeemCard() {
+  const code = document.getElementById('merchantCode').value;
+  if (code) {
+    document.getElementById('resultCardId').textContent = code;
+    document.getElementById('merchantResult').style.display = 'block';
+  } else {
+    alert('Please enter a card code');
+  }
+}
+
+function confirmRedemption() {
+  alert('Card redeemed successfully!');
+  document.getElementById('merchantCode').value = '';
+  document.getElementById('merchantResult').style.display = 'none';
+}
+</script>
