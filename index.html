@@ -251,25 +251,44 @@
           return;
         }
         
-        document.getElementById('campaignsContainer').innerHTML = campaigns.map(c => `
-          <div style="padding:14px;background:#0e0a11;border-radius:9px;margin:10px 0;border:1px solid #ffffff14;">
-            <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
-              <div style="flex:1;">
-                <p style="margin:0;font-weight:950;font-size:16px;">${c.name}</p>
-                <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">Goal: $${c.goal}</p>
-                <p style="margin:4px 0 0 0;font-size:12px;color:#888;">${c.description || 'No description'}</p>
-              </div>
-              <div style="display:flex;gap:6px;">
-                <button class="btn alt" onclick="editCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">Edit</button>
-                <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
+        let html = '';
+        for (let c of campaigns) {
+          // Get coach for this campaign
+          const coaches = await supabaseQuery('coaches', 'GET', null, `?campaign_id=eq.${c.id}&limit=1`);
+          const coachCode = coaches && coaches.length > 0 ? coaches[0].access_code : 'N/A';
+          
+          html += `
+            <div style="padding:14px;background:#0e0a11;border-radius:9px;margin:10px 0;border:1px solid #ffffff14;">
+              <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+                <div style="flex:1;">
+                  <p style="margin:0;font-weight:950;font-size:16px;">${c.name}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">Goal: $${c.goal}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#888;">${c.description || 'No description'}</p>
+                  <p style="margin:8px 0 0 0;padding:8px;background:#1a1420;border-radius:6px;font-family:monospace;font-size:11px;color:var(--gold);border:1px solid #ffffff1a;">
+                    Coach Code: <strong>${coachCode}</strong>
+                    <button onclick="copyToClipboard('${coachCode}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">Copy</button>
+                  </p>
+                </div>
+                <div style="display:flex;gap:6px;flex-shrink:0;">
+                  <button class="btn alt" onclick="editCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">Edit</button>
+                  <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
+                </div>
               </div>
             </div>
-          </div>
-        `).join('');
+          `;
+        }
+        
+        document.getElementById('campaignsContainer').innerHTML = html;
       } catch (error) {
         console.error('Error:', error);
         document.getElementById('campaignsContainer').innerHTML = '<p style="color:#f66;">Error loading campaigns</p>';
       }
+    }
+
+    // Copy to clipboard helper
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text);
+      alert('Coach code copied!');
     }
 
     // Edit campaign (placeholder)
