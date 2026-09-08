@@ -1,33 +1,34 @@
 <div class="wrap">
   <h2>Coach Panel</h2>
-  <div class="panel">
+  
+  <div id="coachLocked" class="panel">
     <h3>Coach Access</h3>
+    <p>Enter your coach access code to unlock player management.</p>
     
     <label>Coach Access Code</label>
     <input type="text" id="coachCode" placeholder="Enter your coach access code">
     
     <button class="btn" onclick="unlockCoach()">Unlock Coach Panel</button>
-    
-    <div id="coachContent" style="display:none;margin-top:20px;">
-      <h3>Team Statistics</h3>
-      <p>Your team's performance data will appear here.</p>
+  </div>
+  
+  <div id="coachUnlockedContent" style="display:none;">
+    <div class="panel">
+      <h3>Campaign: <span id="campaignNameDisplay">-</span></h3>
       
-      <label>Add Player Note</label>
-      <textarea placeholder="Add notes about your team" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
+      <div style="margin-top:20px;">
+        <h4>Add Players</h4>
+        <label>Player Name</label>
+        <input type="text" id="playerName" placeholder="Enter player name">
+        
+        <button class="btn" onclick="addPlayer()" style="margin-top:12px;">Add Player</button>
+      </div>
       
-      <button class="btn" style="margin-top:12px;">Save Notes</button>
+      <div style="margin-top:30px;">
+        <h4>Players on Team</h4>
+        <div id="playersList" style="margin-top:12px;">No players yet</div>
+      </div>
+      
+      <button class="btn" onclick="createCards()" style="margin-top:20px;width:100%;">Create Cards for Players</button>
     </div>
   </div>
 </div>
-
-<script>
-function unlockCoach() {
-  const code = document.getElementById('coachCode').value;
-  if (code === '1234') {
-    document.getElementById('coachContent').style.display = 'block';
-    alert('Coach panel unlocked!');
-  } else {
-    alert('Invalid access code');
-  }
-}
-</script>
