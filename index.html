@@ -823,13 +823,223 @@
       }
     }
 
+    // ===== SUPPORTER CARD (opened with ?card=TOKEN) =====
+
+    function getCardTokenFromUrl() {
+      return new URLSearchParams(window.location.search).get('card');
+    }
+
+    async function loadSupporterCard() {
+      whenReady('supporterContent', async (box) => {
+        const token = getCardTokenFromUrl();
+
+        if (!token) {
+          box.innerHTML = `
+            <div class="panel">
+              <h3>No card</h3>
+              <p style="color:#aaa;">Open your card using the link you received after buying. To buy one, use a player's link.</p>
+            </div>`;
+          return;
+        }
+
+        box.innerHTML = '<p style="color:#aaa;">Loading your card...</p>';
+
+        try {
+          const cards = await supabaseQuery('cards', 'GET', null,
+            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,terms,expires_on,merchants(name,logo_url)),players(name),campaigns(name)`);
+
+          if (!cards || cards.length === 0) {
+            box.innerHTML = '<div class="panel"><h3>Card not found</h3><p style="color:#aaa;">Check the link, or contact whoever sold you this card.</p></div>';
+            return;
+          }
+
+          const card = cards[0];
+          const design = card.card_designs || {};
+          const merchant = design.merchants || {};
+
+          const tabs = await supabaseQuery('card_tabs', 'GET', null,
+            `?card_id=eq.${card.id}&order=tab_number.asc`);
+          const list = tabs || [];
+
+          const left = list.filter(t => t.status === 'sealed').length;
+          const used = list.filter(t => t.status === 'redeemed').length;
+
+          const tabsHtml = list.map(t => {
+            if (t.status === 'sealed') {
+              return `
+                <div style="padding:16px 10px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelTab('${t.id}')">
+                  <p style="margin:0;font-size:22px;">🔒</p>
+                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">Tab ${t.tab_number}</p>
+                  <p style="margin:4px 0 0 0;font-size:11px;color:var(--gold);font-weight:950;">Tap to peel</p>
+                </div>`;
+            }
+            if (t.status === 'peeled') {
+              return `
+                <div style="padding:16px 10px;background:linear-gradient(145deg,#1c3a1c,#0d110d);border:1px solid #6f6a;border-radius:15px;text-align:center;">
+                  <p style="margin:0;font-size:22px;">✓</p>
+                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">Tab ${t.tab_number}</p>
+                  <button class="btn" onclick="redeemTab('${t.id}')" style="margin-top:8px;padding:5px 10px;font-size:11px;">Redeem</button>
+                </div>`;
+            }
+            return `
+              <div style="padding:16px 10px;background:#0e0a11;border:1px solid #ffffff14;border-radius:15px;text-align:center;opacity:.55;">
+                <p style="margin:0;font-size:22px;">✅</p>
+                <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">Tab ${t.tab_number}</p>
+                <p style="margin:4px 0 0 0;font-size:10px;color:#888;">Used</p>
+              </div>`;
+          }).join('');
+
+          box.innerHTML = `
+            <div class="panel" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;gap:12px;">
+                ${merchant.logo_url ? `<img src="${merchant.logo_url}" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;">` : ''}
+                <div>
+                  <h3 style="margin:0;">${merchant.name || design.name || 'Your Card'}</h3>
+                  <p style="margin:4px 0 0 0;color:var(--gold);font-weight:950;">${design.offer_text || 'Buy One Get One Free'}</p>
+                </div>
+              </div>
+              <p style="margin:12px 0 0 0;font-size:12px;color:#aaa;">
+                Card <strong style="font-family:monospace;color:var(--gold);">${card.card_token}</strong>
+                ${card.players ? ` · supporting ${card.players.name}` : ''}
+                ${card.campaigns ? ` · ${card.campaigns.name}` : ''}
+              </p>
+              ${design.expires_on ? `<p style="margin:6px 0 0 0;font-size:12px;color:#888;">Expires ${design.expires_on}</p>` : ''}
+              ${design.terms ? `<p style="margin:6px 0 0 0;font-size:11px;color:#888;">${design.terms}</p>` : ''}
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:18px;">
+              <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+                <p style="margin:0;font-size:12px;color:#aaa;">Unused</p>
+                <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;color:var(--gold);">${left}</p>
+              </div>
+              <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+                <p style="margin:0;font-size:12px;color:#aaa;">Redeemed</p>
+                <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;">${used}</p>
+              </div>
+            </div>
+
+            <div class="panel">
+              <h3>Your Coupons</h3>
+              <p style="margin:6px 0 14px 0;font-size:12px;color:#888;">Peel a tab at the register, then hand your phone to the cashier to redeem it.</p>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">${tabsHtml}</div>
+            </div>
+
+            <button class="btn alt" onclick="saveCardLink()" style="margin-top:18px;">Save My Card Link</button>
+          `;
+        } catch (error) {
+          console.error('Error loading card:', error);
+          box.innerHTML = '<div class="panel"><p style="color:#f66;">Error loading card: ' + error.message + '</p></div>';
+        }
+      });
+    }
+
+    async function peelTab(tabId) {
+      if (!confirm('Peel this coupon? Do this at the register — it cannot be resealed.')) return;
+      try {
+        await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
+          status: 'peeled',
+          peeled_at: new Date().toISOString()
+        });
+        loadSupporterCard();
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function redeemTab(tabId) {
+      const staff = prompt('Staff: enter your name or initials to redeem', '');
+      if (staff === null) return;
+      try {
+        await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
+          status: 'redeemed',
+          redeemed_at: new Date().toISOString(),
+          redeemed_by: staff || 'Staff'
+        });
+        loadSupporterCard();
+        alert('Redeemed. Enjoy!');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    function saveCardLink() {
+      const link = window.location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link)
+          .then(() => alert('Card link copied — bookmark it or text it to yourself:\n\n' + link))
+          .catch(() => prompt('Copy this link:', link));
+      } else {
+        prompt('Copy this link:', link);
+      }
+    }
+
+    // After checkout, wait for the webhook to create the card, then open it
+    async function waitForNewCard(sessionId, tries = 15) {
+      whenReady('supporterContent', async (box) => {
+        box.innerHTML = '<div class="panel"><h3>Payment received</h3><p style="color:#aaa;">Building your card...</p></div>';
+      });
+
+      for (let i = 0; i < tries; i++) {
+        try {
+          const cards = await supabaseQuery('cards', 'GET', null,
+            `?stripe_session_id=eq.${sessionId}&select=card_token`);
+          if (cards && cards.length > 0 && cards[0].card_token) {
+            window.location.href = window.location.origin + window.location.pathname + '?card=' + cards[0].card_token;
+            return;
+          }
+        } catch (e) {
+          console.error('Waiting for card:', e);
+        }
+        await new Promise(r => setTimeout(r, 2000));
+      }
+
+      whenReady('supporterContent', (box) => {
+        box.innerHTML = '<div class="panel"><h3>Payment received</h3><p style="color:#aaa;">Your card is taking longer than usual to build. It will arrive shortly — refresh this page in a minute, or contact us with your receipt.</p></div>';
+      });
+    }
+
+    // ===== BUY (Stripe Checkout) =====
+
+    async function buyCard(designId, campaignId, playerId) {
+      const buyerName = prompt('Your name (so the player knows who supported them):', '');
+      if (buyerName === null) return;
+
+      const base = window.location.origin + window.location.pathname;
+
+      try {
+        const res = await fetch(`${PAYMENT_SERVER}/create-checkout-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            design_id: designId,
+            campaign_id: campaignId,
+            player_id: playerId,
+            buyer_name: buyerName || 'Supporter',
+            success_url: `${base}?purchase=success&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${base}?player=${playerId}&purchase=cancelled`
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout');
+
+        window.location.href = data.url;
+      } catch (error) {
+        console.error('Checkout error:', error);
+        alert('Could not start checkout: ' + error.message);
+      }
+    }
+
     // ===== PAGE WIRING =====
 
     document.addEventListener('click', function (e) {
       const tab = e.target.closest ? e.target.closest('.tab') : null;
-      if (tab && tab.getAttribute('data-tab') === 'player') {
-        loadPlayerView();
-      }
+      if (!tab) return;
+      const which = tab.getAttribute('data-tab');
+      if (which === 'player') loadPlayerView();
+      if (which === 'supporter') loadSupporterCard();
     });
 
     document.addEventListener('DOMContentLoaded', function () {
@@ -840,10 +1050,21 @@
         if (el) el.addEventListener('input', updateSplitPreview);
       });
 
-      if (params.get('purchase') === 'success') {
-        alert('Thank you! Your card is being created — it will appear in a few seconds.');
-      } else if (params.get('purchase') === 'cancelled') {
+      if (params.get('purchase') === 'cancelled') {
         alert('Checkout cancelled — nothing was charged.');
+      }
+
+      // Coming back from Stripe: find the new card and open it
+      if (params.get('purchase') === 'success' && params.get('session_id')) {
+        if (typeof showTab === 'function') showTab('supporter');
+        waitForNewCard(params.get('session_id'));
+        return;
+      }
+
+      if (getCardTokenFromUrl()) {
+        if (typeof showTab === 'function') showTab('supporter');
+        loadSupporterCard();
+        return;
       }
 
       if (getPlayerIdFromUrl()) {
