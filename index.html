@@ -334,3 +334,165 @@
           playersList.innerHTML = '<p style="color:#aaa;">No players yet</p>';
           return;
         }
+        
+        playersList.innerHTML = players.map((p) => `
+          <div style="padding:10px;background:#0e0a11;border-radius:9px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;">
+            <span>${p.name}</span>
+            <button class="btn alt" onclick="removePlayer('${p.id}')" style="padding:5px 10px;font-size:11px;">Remove</button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    // Add player
+    async function addPlayer() {
+      const name = document.getElementById('playerName').value;
+      if (!name) {
+        alert('Enter player name');
+        return;
+      }
+      
+      try {
+        const campaignId = sessionStorage.getItem('currentCampaignId');
+        const coachId = sessionStorage.getItem('currentCoachId');
+        
+        await supabaseQuery('players', 'POST', {
+          campaign_id: campaignId,
+          coach_id: coachId,
+          name,
+          status: 'active'
+        }, '?select=*');
+        
+        document.getElementById('playerName').value = '';
+        loadCoachDashboard();
+        alert('Player added!');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Remove player
+    async function removePlayer(playerId) {
+      try {
+        await supabaseQuery(`players?id=eq.${playerId}`, 'DELETE');
+        loadCoachDashboard();
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    // Create cards
+    async function createCards() {
+      try {
+        const campaignId = sessionStorage.getItem('currentCampaignId');
+        const players = await supabaseQuery('players', 'GET', null, `?campaign_id=eq.${campaignId}`);
+        
+        if (!players || players.length === 0) {
+          alert('No players to create cards for');
+          return;
+        }
+        
+        for (let player of players) {
+          for (let i = 0; i < 8; i++) {
+            await supabaseQuery('cards', 'POST', {
+              campaign_id: campaignId,
+              player_id: player.id,
+              status: 'sealed',
+              value: Math.floor(Math.random() * 50) + 1
+            }, '?select=*');
+          }
+        }
+        
+        alert('Cards created for all players!');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // Load supporter cards
+    async function loadSupporterCards() {
+      try {
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?order=created_at.desc&limit=1');
+        
+        if (!campaigns || campaigns.length === 0) {
+          document.getElementById('cardGrid').innerHTML = '<p>No campaigns available</p>';
+          return;
+        }
+        
+        const campaign = campaigns[0];
+        const cards = await supabaseQuery('cards', 'GET', null, `?campaign_id=eq.${campaign.id}&order=created_at.desc`);
+        
+        if (!cards || cards.length === 0) {
+          document.getElementById('cardGrid').innerHTML = '<p>No cards available yet</p>';
+          return;
+        }
+        
+        document.getElementById('cardGrid').innerHTML = cards.map(card => `
+          <div class="card-item" style="padding:15px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelCard('${card.id}')">
+            <p style="margin:0;font-size:20px;">${card.status === 'sealed' ? '🔒' : '✓'}</p>
+            <p style="margin:8px 0 0 0;font-size:12px;color:#aaa;">Card</p>
+            <p style="margin:4px 0 0 0;font-weight:950;color:var(--gold);" id="card-${card.id}">${card.status === 'sealed' ? '?' : '$' + card.value}</p>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    // Peel card
+    async function peelCard(cardId) {
+      try {
+        await supabaseQuery(`cards?id=eq.${cardId}`, 'PATCH', { status: 'revealed' });
+        loadSupporterCards();
+        alert('Card revealed!');
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    // Load merchant cards
+    async function loadMerchantCards() {
+      try {
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?order=created_at.desc&limit=1');
+        
+        if (!campaigns || campaigns.length === 0) return;
+        
+        const campaign = campaigns[0];
+        const cards = await supabaseQuery('cards', 'GET', null, `?campaign_id=eq.${campaign.id}&status=eq.revealed&order=created_at.desc`);
+        
+        if (!cards || cards.length === 0) {
+          document.getElementById('merchantCardList').innerHTML = '<p style="color:#aaa;">No cards to redeem</p>';
+          return;
+        }
+        
+        document.getElementById('merchantCardList').innerHTML = cards.map(card => `
+          <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <p style="margin:0;font-weight:950;">Card</p>
+              <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">$${card.value}</p>
+            </div>
+            <button class="btn" onclick="redeemCard('${card.id}')" style="padding:8px 12px;font-size:11px;">Redeem</button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+
+    // Redeem card
+    async function redeemCard(cardId) {
+      try {
+        await supabaseQuery(`cards?id=eq.${cardId}`, 'PATCH', { status: 'redeemed' });
+        loadMerchantCards();
+        alert('Card redeemed!');
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    }
+  </script>
+</body>
+</html>
