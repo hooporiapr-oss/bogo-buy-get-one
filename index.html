@@ -5,14 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Basketball Money — Unified Digital Peel Prototype</title>
   
-  <!-- Shared Styles -->
   <link rel="stylesheet" href="css/shared.css">
-  
-  <!-- Tab switching script -->
   <script src="js/tabs.js"></script>
 </head>
 <body>
-  <!-- Navigation -->
   <nav>
     <div class="wrap">
       <div class="navin">
@@ -31,7 +27,6 @@
     </div>
   </nav>
 
-  <!-- Hero Section -->
   <header>
     <div class="wrap">
       <div class="hero">
@@ -63,46 +58,52 @@
     </div>
   </header>
 
-  <!-- Tab Content Containers -->
   <main>
+    <!-- Admin Tab -->
     <section id="view-admin" class="view active">
-  <div class="wrap">
-    <h2>Admin Panel</h2>
-    
-    <div id="adminLocked" class="panel">
-      <h3>Admin Access Required</h3>
-      <p>Enter your admin access code to create campaigns.</p>
-      
-      <label>Admin Code</label>
-      <input type="password" id="adminCode" placeholder="Enter admin code">
-      
-      <button class="btn" onclick="unlockAdmin()">Unlock Admin</button>
-    </div>
-    
-    <div id="adminUnlockedContent" style="display:none;">
-      <div class="panel">
-        <h3>Create Campaign</h3>
+      <div class="wrap">
+        <h2>Admin Panel</h2>
         
-        <label>Campaign Name</label>
-        <input type="text" id="campaignName" placeholder="Enter campaign name">
+        <div id="adminLocked" class="panel">
+          <h3>Admin Access Required</h3>
+          <p>Enter your admin access code to create campaigns.</p>
+          
+          <label>Admin Code</label>
+          <input type="password" id="adminCode" placeholder="Enter admin code">
+          
+          <button class="btn" onclick="unlockAdmin()">Unlock Admin</button>
+        </div>
         
-        <label>Campaign Goal ($)</label>
-        <input type="number" id="campaignGoal" placeholder="Enter goal amount">
-        
-        <label>Description</label>
-        <textarea id="campaignDesc" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
-        
-        <button class="btn" onclick="createCampaign()">Create Campaign</button>
-        
-        <div id="campaignSuccess" style="display:none;margin-top:20px;padding:15px;background:#14331e;border:1px solid #285f39;border-radius:10px;color:#9aeeb3;">
-          <p><strong>Campaign Created!</strong></p>
-          <p>Coach Access Code: <strong id="coachCode">-</strong></p>
-          <p style="font-size:12px;margin-top:10px;">Share this code with your coach.</p>
+        <div id="adminUnlockedContent" style="display:none;">
+          <div class="panel">
+            <h3>Create Campaign</h3>
+            
+            <label>Campaign Name</label>
+            <input type="text" id="campaignName" placeholder="Enter campaign name">
+            
+            <label>Campaign Goal ($)</label>
+            <input type="number" id="campaignGoal" placeholder="Enter goal amount">
+            
+            <label>Description</label>
+            <textarea id="campaignDesc" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
+            
+            <button class="btn" onclick="createCampaign()">Create Campaign</button>
+            
+            <div id="campaignSuccess" style="display:none;margin-top:20px;padding:15px;background:#14331e;border:1px solid #285f39;border-radius:10px;color:#9aeeb3;">
+              <p><strong>Campaign Created!</strong></p>
+              <p>Coach Access Code: <strong id="coachCode">-</strong></p>
+              <p style="font-size:12px;margin-top:10px;">Share this code with your coach.</p>
+            </div>
+          </div>
+          
+          <div class="panel" style="margin-top:30px;">
+            <h3>Active Campaigns</h3>
+            <div id="campaignsList">Loading campaigns...</div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
+
     <section id="view-player" class="view"></section>
     <section id="view-supporter" class="view"></section>
     <section id="view-merchant" class="view"></section>
@@ -110,26 +111,41 @@
     <section id="view-coach" class="view"></section>
   </main>
 
-  <!-- Main app script -->
   <script>
-    // SessionStorage-based app (no Supabase yet)
+    // Supabase config
+    const SUPABASE_URL = 'https://sdaphocueugzfvjovuxd.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
 
+    // Supabase helper
+    async function supabaseQuery(table, method = 'GET', data = null, filter = '') {
+      const url = `${SUPABASE_URL}/rest/v1/${table}${filter}`;
+      const options = {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY
+        }
+      };
+      if (data) options.body = JSON.stringify(data);
+      
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`Supabase error: ${response.status} ${response.statusText}`);
+      
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        return await response.json();
+      }
+      return null;
+    }
+
+    // Check admin unlock
     if(sessionStorage.getItem('bm_admin_unlocked') === 'yes'){
       setTimeout(() => {
-        const adminLocked = document.getElementById('adminLocked');
-        const adminUnlocked = document.getElementById('adminUnlockedContent');
-        if(adminLocked) adminLocked.style.display='none';
-        if(adminUnlocked) adminUnlocked.style.display='block';
+        document.getElementById('adminLocked').style.display='none';
+        document.getElementById('adminUnlockedContent').style.display='block';
+        loadCampaigns();
       }, 100);
-    }
-
-    // Storage helpers
-    function getCampaigns() {
-      return JSON.parse(sessionStorage.getItem('campaigns') || '[]');
-    }
-
-    function saveCampaigns(campaigns) {
-      sessionStorage.setItem('campaigns', JSON.stringify(campaigns));
     }
 
     // Admin unlock
@@ -139,13 +155,14 @@
         sessionStorage.setItem('bm_admin_unlocked', 'yes');
         document.getElementById('adminLocked').style.display='none';
         document.getElementById('adminUnlockedContent').style.display='block';
+        loadCampaigns();
       } else {
         alert('Invalid admin code');
       }
     }
 
-    // Create campaign
-    function createCampaign() {
+    // Create campaign in Supabase
+    async function createCampaign() {
       const name = document.getElementById('campaignName').value;
       const goal = document.getElementById('campaignGoal').value;
       const desc = document.getElementById('campaignDesc').value;
@@ -155,186 +172,266 @@
         return;
       }
       
-      const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-      
-      const campaign = {
-        id: Date.now(),
-        name,
-        goal: parseFloat(goal),
-        description: desc,
-        coachCode,
-        players: [],
-        cards: [],
-        createdAt: new Date().toISOString()
-      };
-      
-      const campaigns = getCampaigns();
-      campaigns.push(campaign);
-      saveCampaigns(campaigns);
-      
-      document.getElementById('campaignName').value = '';
-      document.getElementById('campaignGoal').value = '';
-      document.getElementById('campaignDesc').value = '';
-      document.getElementById('coachCode').textContent = coachCode;
-      document.getElementById('campaignSuccess').style.display = 'block';
-      
-      alert('Campaign created! Coach code: ' + coachCode);
+      try {
+        const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        
+        // Create campaign
+        const campaign = await supabaseQuery('campaigns', 'POST', {
+          name,
+          goal: parseFloat(goal),
+          description: desc,
+          admin_code: 'admin123'
+        });
+        
+        // Create coach for campaign
+        await supabaseQuery('coaches', 'POST', {
+          campaign_id: campaign[0].id,
+          name: 'Head Coach',
+          access_code: coachCode
+        });
+        
+        document.getElementById('campaignName').value = '';
+        document.getElementById('campaignGoal').value = '';
+        document.getElementById('campaignDesc').value = '';
+        document.getElementById('coachCode').textContent = coachCode;
+        document.getElementById('campaignSuccess').style.display = 'block';
+        
+        loadCampaigns();
+        alert('Campaign created! Coach code: ' + coachCode);
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating campaign: ' + error.message);
+      }
+    }
+
+    // Load campaigns
+    async function loadCampaigns() {
+      try {
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?order=created_at.desc&limit=10');
+        
+        if (!campaigns || campaigns.length === 0) {
+          document.getElementById('campaignsList').innerHTML = '<p style="color:#aaa;">No campaigns yet</p>';
+          return;
+        }
+        
+        document.getElementById('campaignsList').innerHTML = campaigns.map(c => `
+          <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;border:1px solid #ffffff14;">
+            <p style="margin:0;font-weight:950;">${c.name}</p>
+            <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">Goal: $${c.goal}</p>
+            <p style="margin:4px 0 0 0;font-size:12px;color:#bbb;">${c.description || '-'}</p>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading campaigns:', error);
+        document.getElementById('campaignsList').innerHTML = '<p style="color:#f66;">Error loading campaigns</p>';
+      }
     }
 
     // Coach unlock
-    function unlockCoach() {
+    async function unlockCoach() {
       const code = document.getElementById('coachCode').value;
-      const campaigns = getCampaigns();
-      const campaign = campaigns.find(c => c.coachCode === code);
       
-      if (campaign) {
-        sessionStorage.setItem('currentCampaignId', campaign.id);
+      try {
+        const coaches = await supabaseQuery('coaches', 'GET', null, `?access_code=eq.${code}`);
+        
+        if (!coaches || coaches.length === 0) {
+          alert('Invalid coach code');
+          return;
+        }
+        
+        const coach = coaches[0];
+        sessionStorage.setItem('currentCampaignId', coach.campaign_id);
+        sessionStorage.setItem('currentCoachId', coach.id);
+        
         document.getElementById('coachLocked').style.display = 'none';
         document.getElementById('coachUnlockedContent').style.display = 'block';
+        
         loadCoachDashboard();
-      } else {
-        alert('Invalid coach code');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error unlocking coach panel: ' + error.message);
       }
     }
 
     // Load coach dashboard
-    function loadCoachDashboard() {
-      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
-      const campaigns = getCampaigns();
-      const campaign = campaigns.find(c => c.id === campaignId);
-      
-      if (!campaign) return;
-      
-      document.getElementById('campaignNameDisplay').textContent = campaign.name;
-      
-      const playersList = document.getElementById('playersList');
-      playersList.innerHTML = campaign.players.map((p, i) => `
-        <div style="padding:10px;background:#0e0a11;border-radius:9px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;">
-          <span>${p.name}</span>
-          <button class="btn alt" onclick="removePlayer(${i})" style="padding:5px 10px;font-size:11px;">Remove</button>
-        </div>
-      `).join('');
+    async function loadCoachDashboard() {
+      try {
+        const campaignId = sessionStorage.getItem('currentCampaignId');
+        
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, `?id=eq.${campaignId}`);
+        if (!campaigns || campaigns.length === 0) return;
+        
+        document.getElementById('campaignNameDisplay').textContent = campaigns[0].name;
+        
+        const players = await supabaseQuery('players', 'GET', null, `?campaign_id=eq.${campaignId}`);
+        
+        const playersList = document.getElementById('playersList');
+        if (!players || players.length === 0) {
+          playersList.innerHTML = '<p style="color:#aaa;">No players yet</p>';
+          return;
+        }
+        
+        playersList.innerHTML = players.map((p, i) => `
+          <div style="padding:10px;background:#0e0a11;border-radius:9px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;">
+            <span>${p.name}</span>
+            <button class="btn alt" onclick="removePlayer('${p.id}')" style="padding:5px 10px;font-size:11px;">Remove</button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
 
     // Add player
-    function addPlayer() {
+    async function addPlayer() {
       const name = document.getElementById('playerName').value;
       if (!name) {
         alert('Enter player name');
         return;
       }
       
-      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
-      const campaigns = getCampaigns();
-      const campaign = campaigns.find(c => c.id === campaignId);
-      
-      campaign.players.push({ name, id: Date.now() });
-      saveCampaigns(campaigns);
-      
-      document.getElementById('playerName').value = '';
-      loadCoachDashboard();
-      alert('Player added!');
+      try {
+        const campaignId = sessionStorage.getItem('currentCampaignId');
+        const coachId = sessionStorage.getItem('currentCoachId');
+        
+        await supabaseQuery('players', 'POST', {
+          campaign_id: campaignId,
+          coach_id: coachId,
+          name,
+          status: 'active'
+        });
+        
+        document.getElementById('playerName').value = '';
+        loadCoachDashboard();
+        alert('Player added!');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error adding player: ' + error.message);
+      }
     }
 
     // Remove player
-    function removePlayer(index) {
-      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
-      const campaigns = getCampaigns();
-      const campaign = campaigns.find(c => c.id === campaignId);
-      
-      campaign.players.splice(index, 1);
-      saveCampaigns(campaigns);
-      loadCoachDashboard();
+    async function removePlayer(playerId) {
+      try {
+        await supabaseQuery(`players?id=eq.${playerId}`, 'DELETE');
+        loadCoachDashboard();
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
 
-    // Create cards for players
-    function createCards() {
-      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
-      const campaigns = getCampaigns();
-      const campaign = campaigns.find(c => c.id === campaignId);
-      
-      campaign.cards = [];
-      campaign.players.forEach(player => {
-        for (let i = 0; i < 8; i++) {
-          campaign.cards.push({
-            id: Date.now() + Math.random(),
-            playerId: player.id,
-            playerName: player.name,
-            status: 'sealed',
-            value: Math.floor(Math.random() * 50) + 1
-          });
+    // Create cards
+    async function createCards() {
+      try {
+        const campaignId = sessionStorage.getItem('currentCampaignId');
+        const players = await supabaseQuery('players', 'GET', null, `?campaign_id=eq.${campaignId}`);
+        
+        if (!players || players.length === 0) {
+          alert('No players to create cards for');
+          return;
         }
-      });
-      
-      saveCampaigns(campaigns);
-      alert('Cards created for all players!');
+        
+        for (let player of players) {
+          for (let i = 0; i < 8; i++) {
+            await supabaseQuery('cards', 'POST', {
+              campaign_id: campaignId,
+              player_id: player.id,
+              status: 'sealed',
+              value: Math.floor(Math.random() * 50) + 1
+            });
+          }
+        }
+        
+        alert('Cards created for all players!');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error creating cards: ' + error.message);
+      }
     }
 
     // Load supporter cards
-    function loadSupporterCards() {
-      const campaigns = getCampaigns();
-      if (campaigns.length === 0) {
-        document.getElementById('cardGrid').innerHTML = '<p>No campaigns available</p>';
-        return;
+    async function loadSupporterCards() {
+      try {
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?order=created_at.desc&limit=1');
+        
+        if (!campaigns || campaigns.length === 0) {
+          document.getElementById('cardGrid').innerHTML = '<p>No campaigns available</p>';
+          return;
+        }
+        
+        const campaign = campaigns[0];
+        const cards = await supabaseQuery('cards', 'GET', null, `?campaign_id=eq.${campaign.id}&order=created_at.desc`);
+        
+        if (!cards || cards.length === 0) {
+          document.getElementById('cardGrid').innerHTML = '<p>No cards available yet</p>';
+          return;
+        }
+        
+        document.getElementById('cardGrid').innerHTML = cards.map(card => `
+          <div class="card-item" style="padding:15px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelCard('${card.id}')">
+            <p style="margin:0;font-size:20px;">${card.status === 'sealed' ? '🔒' : '✓'}</p>
+            <p style="margin:8px 0 0 0;font-size:12px;color:#aaa;">Card</p>
+            <p style="margin:4px 0 0 0;font-weight:950;color:var(--gold);" id="card-${card.id}">${card.status === 'sealed' ? '?' : '$' + card.value}</p>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
       }
-      
-      const campaign = campaigns[campaigns.length - 1];
-      
-      document.getElementById('cardGrid').innerHTML = campaign.cards.map(card => `
-        <div class="card-item" style="padding:15px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelCard('${card.id}')">
-          <p style="margin:0;font-size:20px;">${card.status === 'sealed' ? '🔒' : '✓'}</p>
-          <p style="margin:8px 0 0 0;font-size:12px;color:#aaa;">${card.playerName}</p>
-          <p style="margin:4px 0 0 0;font-weight:950;color:var(--gold);" id="card-${card.id}">$${card.value}</p>
-        </div>
-      `).join('');
     }
 
     // Peel card
-    function peelCard(cardId) {
-      const campaigns = getCampaigns();
-      const campaign = campaigns[campaigns.length - 1];
-      const card = campaign.cards.find(c => c.id == cardId);
-      
-      if (card && card.status === 'sealed') {
-        card.status = 'revealed';
-        saveCampaigns(campaigns);
+    async function peelCard(cardId) {
+      try {
+        await supabaseQuery(`cards?id=eq.${cardId}`, 'PATCH', { status: 'revealed' });
         loadSupporterCards();
-        alert('You revealed: $' + card.value);
+        alert('Card revealed!');
+      } catch (error) {
+        console.error('Error:', error);
       }
     }
 
-    // Load merchant cards for redemption
-    function loadMerchantCards() {
-      const campaigns = getCampaigns();
-      if (campaigns.length === 0) return;
-      
-      const campaign = campaigns[campaigns.length - 1];
-      const revealedCards = campaign.cards.filter(c => c.status === 'revealed');
-      
-      document.getElementById('merchantCardList').innerHTML = revealedCards.map(card => `
-        <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <p style="margin:0;font-weight:950;">${card.playerName}</p>
-            <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">$${card.value}</p>
+    // Load merchant cards
+    async function loadMerchantCards() {
+      try {
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?order=created_at.desc&limit=1');
+        
+        if (!campaigns || campaigns.length === 0) return;
+        
+        const campaign = campaigns[0];
+        const cards = await supabaseQuery('cards', 'GET', null, `?campaign_id=eq.${campaign.id}&status=eq.revealed&order=created_at.desc`);
+        
+        if (!cards || cards.length === 0) {
+          document.getElementById('merchantCardList').innerHTML = '<p style="color:#aaa;">No cards to redeem</p>';
+          return;
+        }
+        
+        document.getElementById('merchantCardList').innerHTML = cards.map(card => `
+          <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <p style="margin:0;font-weight:950;">Card</p>
+              <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">$${card.value}</p>
+            </div>
+            <button class="btn" onclick="redeemCard('${card.id}')" style="padding:8px 12px;font-size:11px;">Redeem</button>
           </div>
-          <button class="btn" onclick="redeemCard('${card.id}')" style="padding:8px 12px;font-size:11px;">Redeem</button>
-        </div>
-      `).join('');
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
+      }
     }
 
     // Redeem card
-    function redeemCard(cardId) {
-      const campaigns = getCampaigns();
-      const campaign = campaigns[campaigns.length - 1];
-      const card = campaign.cards.find(c => c.id == cardId);
-      
-      if (card) {
-        card.status = 'redeemed';
-        saveCampaigns(campaigns);
+    async function redeemCard(cardId) {
+      try {
+        await supabaseQuery(`cards?id=eq.${cardId}`, 'PATCH', { status: 'redeemed' });
         loadMerchantCards();
-        alert('Card redeemed: $' + card.value);
+        alert('Card redeemed!');
+      } catch (error) {
+        console.error('Error:', error);
       }
     }
+
+    // Initial load
+    loadCampaigns();
   </script>
 </body>
 </html>
