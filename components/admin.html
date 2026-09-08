@@ -1,1 +1,27 @@
+<div class="wrap">
+  <h2>Admin Panel</h2>
+  <div class="panel">
+    <h3>Create Campaign</h3>
+    
+    <label>Campaign Name</label>
+    <input type="text" id="campaignName" placeholder="Enter campaign name">
+    
+    <label>Campaign Goal</label>
+    <input type="number" id="campaignGoal" placeholder="Enter goal amount">
+    
+    <label>Description</label>
+    <textarea id="campaignDesc" placeholder="Campaign description" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit"></textarea>
+    
+    <button class="btn" onclick="createCampaign()">Create Campaign</button>
+  </div>
+</div>
 
+<script>
+function createCampaign() {
+  const name = document.getElementById('campaignName').value;
+  const goal = document.getElementById('campaignGoal').value;
+  if (name && goal) {
+    alert('Campaign created: ' + name);
+  }
+}
+</script>
