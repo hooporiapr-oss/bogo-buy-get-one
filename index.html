@@ -8,7 +8,7 @@
   <!-- Shared Styles -->
   <link rel="stylesheet" href="css/shared.css">
   
-  <!-- Tab switching script - EARLY BINDING to prevent parse-gap race conditions -->
+  <!-- Tab switching script -->
   <script src="js/tabs.js"></script>
 </head>
 <body>
@@ -75,7 +75,8 @@
 
   <!-- Main app script -->
   <script>
-    // Check if admin is already unlocked from session on page load
+    // SessionStorage-based app (no Supabase yet)
+
     if(sessionStorage.getItem('bm_admin_unlocked') === 'yes'){
       setTimeout(() => {
         const adminLocked = document.getElementById('adminLocked');
@@ -85,29 +86,13 @@
       }, 100);
     }
 
-    // Supabase setup
-    const SUPABASE_URL = 'https://sdaphocueugzfvjovuxd.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
+    // Storage helpers
+    function getCampaigns() {
+      return JSON.parse(sessionStorage.getItem('campaigns') || '[]');
+    }
 
-    // Helper function to call Supabase REST API
-    async function supabaseCall(table, method = 'GET', data = null, filters = '') {
-      let url = `${SUPABASE_URL}/rest/v1/${table}`;
-      if (filters) url += filters;
-      
-      const options = {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'apikey': SUPABASE_KEY
-        }
-      };
-      
-      if (data) options.body = JSON.stringify(data);
-      
-      const response = await fetch(url, options);
-      if (!response.ok) throw new Error(`Supabase error: ${response.statusText}`);
-      return response.json();
+    function saveCampaigns(campaigns) {
+      sessionStorage.setItem('campaigns', JSON.stringify(campaigns));
     }
 
     // Admin unlock
@@ -123,7 +108,7 @@
     }
 
     // Create campaign
-    async function createCampaign() {
+    function createCampaign() {
       const name = document.getElementById('campaignName').value;
       const goal = document.getElementById('campaignGoal').value;
       const desc = document.getElementById('campaignDesc').value;
@@ -133,48 +118,184 @@
         return;
       }
       
-      try {
-        // Generate random coach code
-        const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        
-        // Create campaign in Supabase
-const response = await fetch(`${SUPABASE_URL}/rest/v1/campaigns?select=*`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${SUPABASE_KEY}`,
-    'apikey': SUPABASE_KEY
-  },
-  body: JSON.stringify({
-    name,
-    goal: parseFloat(goal),
-    description: desc,
-    admin_code: 'admin123'
-  })
-});
+      const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+      
+      const campaign = {
+        id: Date.now(),
+        name,
+        goal: parseFloat(goal),
+        description: desc,
+        coachCode,
+        players: [],
+        cards: [],
+        createdAt: new Date().toISOString()
+      };
+      
+      const campaigns = getCampaigns();
+      campaigns.push(campaign);
+      saveCampaigns(campaigns);
+      
+      document.getElementById('campaignName').value = '';
+      document.getElementById('campaignGoal').value = '';
+      document.getElementById('campaignDesc').value = '';
+      document.getElementById('coachCode').textContent = coachCode;
+      document.getElementById('campaignSuccess').style.display = 'block';
+      
+      alert('Campaign created! Coach code: ' + coachCode);
+    }
 
-if (!response.ok) throw new Error('Failed to create campaign');
+    // Coach unlock
+    function unlockCoach() {
+      const code = document.getElementById('coachCode').value;
+      const campaigns = getCampaigns();
+      const campaign = campaigns.find(c => c.coachCode === code);
+      
+      if (campaign) {
+        sessionStorage.setItem('currentCampaignId', campaign.id);
+        document.getElementById('coachLocked').style.display = 'none';
+        document.getElementById('coachUnlockedContent').style.display = 'block';
+        loadCoachDashboard();
+      } else {
+        alert('Invalid coach code');
+      }
+    }
 
-const campaign = await response.json();
-        
-        // Create coach entry for this campaign
-        await supabaseCall('coaches', 'POST', {
-          campaign_id: campaign.id,
-          name: 'Head Coach',
-          access_code: coachCode
-        });
-        
-        // Show success
-        document.getElementById('campaignName').value = '';
-        document.getElementById('campaignGoal').value = '';
-        document.getElementById('campaignDesc').value = '';
-        document.getElementById('coachCode').textContent = coachCode;
-        document.getElementById('campaignSuccess').style.display = 'block';
-        
-        alert('Campaign created successfully!');
-      } catch (error) {
-        console.error('Error creating campaign:', error);
-        alert('Error creating campaign: ' + error.message);
+    // Load coach dashboard
+    function loadCoachDashboard() {
+      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
+      const campaigns = getCampaigns();
+      const campaign = campaigns.find(c => c.id === campaignId);
+      
+      if (!campaign) return;
+      
+      document.getElementById('campaignNameDisplay').textContent = campaign.name;
+      
+      const playersList = document.getElementById('playersList');
+      playersList.innerHTML = campaign.players.map((p, i) => `
+        <div style="padding:10px;background:#0e0a11;border-radius:9px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;">
+          <span>${p.name}</span>
+          <button class="btn alt" onclick="removePlayer(${i})" style="padding:5px 10px;font-size:11px;">Remove</button>
+        </div>
+      `).join('');
+    }
+
+    // Add player
+    function addPlayer() {
+      const name = document.getElementById('playerName').value;
+      if (!name) {
+        alert('Enter player name');
+        return;
+      }
+      
+      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
+      const campaigns = getCampaigns();
+      const campaign = campaigns.find(c => c.id === campaignId);
+      
+      campaign.players.push({ name, id: Date.now() });
+      saveCampaigns(campaigns);
+      
+      document.getElementById('playerName').value = '';
+      loadCoachDashboard();
+      alert('Player added!');
+    }
+
+    // Remove player
+    function removePlayer(index) {
+      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
+      const campaigns = getCampaigns();
+      const campaign = campaigns.find(c => c.id === campaignId);
+      
+      campaign.players.splice(index, 1);
+      saveCampaigns(campaigns);
+      loadCoachDashboard();
+    }
+
+    // Create cards for players
+    function createCards() {
+      const campaignId = parseInt(sessionStorage.getItem('currentCampaignId'));
+      const campaigns = getCampaigns();
+      const campaign = campaigns.find(c => c.id === campaignId);
+      
+      campaign.cards = [];
+      campaign.players.forEach(player => {
+        for (let i = 0; i < 8; i++) {
+          campaign.cards.push({
+            id: Date.now() + Math.random(),
+            playerId: player.id,
+            playerName: player.name,
+            status: 'sealed',
+            value: Math.floor(Math.random() * 50) + 1
+          });
+        }
+      });
+      
+      saveCampaigns(campaigns);
+      alert('Cards created for all players!');
+    }
+
+    // Load supporter cards
+    function loadSupporterCards() {
+      const campaigns = getCampaigns();
+      if (campaigns.length === 0) {
+        document.getElementById('cardGrid').innerHTML = '<p>No campaigns available</p>';
+        return;
+      }
+      
+      const campaign = campaigns[campaigns.length - 1];
+      
+      document.getElementById('cardGrid').innerHTML = campaign.cards.map(card => `
+        <div class="card-item" style="padding:15px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelCard('${card.id}')">
+          <p style="margin:0;font-size:20px;">${card.status === 'sealed' ? '🔒' : '✓'}</p>
+          <p style="margin:8px 0 0 0;font-size:12px;color:#aaa;">${card.playerName}</p>
+          <p style="margin:4px 0 0 0;font-weight:950;color:var(--gold);" id="card-${card.id}">$${card.value}</p>
+        </div>
+      `).join('');
+    }
+
+    // Peel card
+    function peelCard(cardId) {
+      const campaigns = getCampaigns();
+      const campaign = campaigns[campaigns.length - 1];
+      const card = campaign.cards.find(c => c.id == cardId);
+      
+      if (card && card.status === 'sealed') {
+        card.status = 'revealed';
+        saveCampaigns(campaigns);
+        loadSupporterCards();
+        alert('You revealed: $' + card.value);
+      }
+    }
+
+    // Load merchant cards for redemption
+    function loadMerchantCards() {
+      const campaigns = getCampaigns();
+      if (campaigns.length === 0) return;
+      
+      const campaign = campaigns[campaigns.length - 1];
+      const revealedCards = campaign.cards.filter(c => c.status === 'revealed');
+      
+      document.getElementById('merchantCardList').innerHTML = revealedCards.map(card => `
+        <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <p style="margin:0;font-weight:950;">${card.playerName}</p>
+            <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">$${card.value}</p>
+          </div>
+          <button class="btn" onclick="redeemCard('${card.id}')" style="padding:8px 12px;font-size:11px;">Redeem</button>
+        </div>
+      `).join('');
+    }
+
+    // Redeem card
+    function redeemCard(cardId) {
+      const campaigns = getCampaigns();
+      const campaign = campaigns[campaigns.length - 1];
+      const card = campaign.cards.find(c => c.id == cardId);
+      
+      if (card) {
+        card.status = 'redeemed';
+        saveCampaigns(campaigns);
+        loadMerchantCards();
+        alert('Card redeemed: $' + card.value);
       }
     }
   </script>
