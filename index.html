@@ -77,12 +77,94 @@
         
         <!-- Admin Dashboard (hidden until logged in) -->
         <div id="adminDashboard" style="display:none;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-            <h3 style="margin:0;">Manage Campaigns</h3>
-            <button class="btn" onclick="toggleCreateForm()">+ New Campaign</button>
+
+          <!-- ===== MERCHANTS ===== -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="margin:0;">Merchants</h3>
+            <button class="btn" onclick="toggleForm('createMerchantForm')">+ New Merchant</button>
+          </div>
+
+          <div id="createMerchantForm" class="panel" style="display:none;margin-bottom:20px;">
+            <h3>Add Merchant</h3>
+
+            <label>Business Name</label>
+            <input type="text" id="merchantName" placeholder="e.g. Domino's Pizza">
+
+            <label>Logo URL (optional)</label>
+            <input type="text" id="merchantLogo" placeholder="https://...">
+
+            <label>Contact Name (optional)</label>
+            <input type="text" id="merchantContact" placeholder="Contact person">
+
+            <label>Contact Email (optional)</label>
+            <input type="text" id="merchantEmail" placeholder="name@business.com">
+
+            <div style="display:flex;gap:10px;margin-top:12px;">
+              <button class="btn" onclick="createMerchant()">Save Merchant</button>
+              <button class="btn alt" onclick="toggleForm('createMerchantForm')">Cancel</button>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-bottom:26px;">
+            <div id="merchantsContainer">Loading merchants...</div>
+          </div>
+
+          <!-- ===== CARD DESIGNS ===== -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="margin:0;">BOGO Cards</h3>
+            <button class="btn" onclick="toggleForm('createDesignForm')">+ New Card</button>
+          </div>
+
+          <div id="createDesignForm" class="panel" style="display:none;margin-bottom:20px;">
+            <h3>Create BOGO Card</h3>
+
+            <label>Merchant</label>
+            <select id="designMerchant" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;">
+              <option value="">Select a merchant...</option>
+            </select>
+
+            <label>Card Name</label>
+            <input type="text" id="designName" placeholder="e.g. Domino's 16-Tab BOGO">
+
+            <label>Number of Coupon Tabs</label>
+            <select id="designTabs" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;">
+              <option value="8">8 tabs</option>
+              <option value="16" selected>16 tabs</option>
+              <option value="32">32 tabs</option>
+            </select>
+
+            <label>Price ($)</label>
+            <input type="number" id="designPrice" value="20" step="0.01">
+
+            <label>Team Share (%)</label>
+            <input type="number" id="designShare" value="50" min="0" max="100">
+            <p style="margin:6px 0 0 0;font-size:11px;color:#888;" id="splitPreview">Team keeps $10.00 · Platform keeps $10.00</p>
+
+            <label>Offer Text</label>
+            <input type="text" id="designOffer" value="Buy One Get One Free">
+
+            <label>Terms (optional)</label>
+            <input type="text" id="designTerms" placeholder="One per visit. Not valid with other offers.">
+
+            <label>Expires On (optional)</label>
+            <input type="date" id="designExpires">
+
+            <div style="display:flex;gap:10px;margin-top:12px;">
+              <button class="btn" onclick="createDesign()">Create Card</button>
+              <button class="btn alt" onclick="toggleForm('createDesignForm')">Cancel</button>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-bottom:26px;">
+            <div id="designsContainer">Loading cards...</div>
+          </div>
+
+          <!-- ===== CAMPAIGNS ===== -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="margin:0;">Campaigns</h3>
+            <button class="btn" onclick="toggleForm('createCampaignForm')">+ New Campaign</button>
           </div>
           
-          <!-- Create Campaign Form -->
           <div id="createCampaignForm" class="panel" style="display:none;margin-bottom:20px;">
             <h3>Create New Campaign</h3>
             
@@ -97,14 +179,12 @@
             
             <div style="display:flex;gap:10px;margin-top:12px;">
               <button class="btn" onclick="createCampaign()">Create Campaign</button>
-              <button class="btn alt" onclick="toggleCreateForm()">Cancel</button>
+              <button class="btn alt" onclick="toggleForm('createCampaignForm')">Cancel</button>
             </div>
           </div>
           
-          <!-- Campaigns List -->
           <div id="campaignsList" class="panel">
-            <h3>Active Campaigns</h3>
-            <div id="campaignsContainer" style="margin-top:15px;">Loading campaigns...</div>
+            <div id="campaignsContainer" style="margin-top:4px;">Loading campaigns...</div>
           </div>
           
           <button class="btn red" onclick="adminLogout()" style="margin-top:20px;width:100%;">Logout</button>
@@ -123,6 +203,9 @@
     // Supabase config
     const SUPABASE_URL = 'https://sdaphocueugzfvjovuxd.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYXBob2N1ZXVnemZ2am92dXhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM2MjQyMDgsImV4cCI6MjA5OTIwMDIwOH0.pDAzf4P6dD9eNEBlnP95SdF5BI-R84-Rdc0vKzYcn7M';
+
+    // Payment server (separate Render web service)
+    const PAYMENT_SERVER = 'https://basketball-money-payments.onrender.com';
 
     // Supabase helper
     async function supabaseQuery(table, method = 'GET', data = null, filter = '') {
@@ -151,7 +234,7 @@
       return null;
     }
 
-    // Wait for an element that arrives with a fetched component, then run cb
+    // Wait for an element that arrives with a fetched component
     function whenReady(id, cb, tries = 40) {
       const el = document.getElementById(id);
       if (el) { cb(el); return; }
@@ -159,47 +242,229 @@
       setTimeout(() => whenReady(id, cb, tries - 1), 100);
     }
 
+    function money(n) {
+      return '$' + Number(n || 0).toFixed(2);
+    }
+
     // Check if admin is already logged in
     if(sessionStorage.getItem('bm_admin_logged_in') === 'yes'){
       showAdminDashboard();
-      loadCampaigns();
+      loadAdminData();
     }
 
-    // Admin login
     function adminLogin() {
       const password = document.getElementById('adminPassword').value;
       if (password === 'admin123') {
         sessionStorage.setItem('bm_admin_logged_in', 'yes');
         document.getElementById('adminPassword').value = '';
         showAdminDashboard();
-        loadCampaigns();
+        loadAdminData();
       } else {
         alert('Invalid password');
       }
     }
 
-    // Admin logout
     function adminLogout() {
       sessionStorage.removeItem('bm_admin_logged_in');
       document.getElementById('adminLoginScreen').style.display='block';
       document.getElementById('adminDashboard').style.display='none';
-      document.getElementById('createCampaignForm').style.display='none';
       alert('Logged out');
     }
 
-    // Show admin dashboard
     function showAdminDashboard() {
       document.getElementById('adminLoginScreen').style.display='none';
       document.getElementById('adminDashboard').style.display='block';
     }
 
-    // Toggle create form
-    function toggleCreateForm() {
-      const form = document.getElementById('createCampaignForm');
+    function loadAdminData() {
+      loadMerchants();
+      loadDesigns();
+      loadCampaigns();
+    }
+
+    function toggleForm(id) {
+      const form = document.getElementById(id);
       form.style.display = form.style.display === 'none' ? 'block' : 'none';
     }
 
-    // Create campaign
+    // ===== MERCHANTS =====
+
+    async function createMerchant() {
+      const name = document.getElementById('merchantName').value.trim();
+      if (!name) { alert('Enter a business name'); return; }
+
+      try {
+        await supabaseQuery('merchants', 'POST', {
+          name,
+          logo_url: document.getElementById('merchantLogo').value.trim() || null,
+          contact_name: document.getElementById('merchantContact').value.trim() || null,
+          contact_email: document.getElementById('merchantEmail').value.trim() || null
+        }, '?select=*');
+
+        document.getElementById('merchantName').value = '';
+        document.getElementById('merchantLogo').value = '';
+        document.getElementById('merchantContact').value = '';
+        document.getElementById('merchantEmail').value = '';
+        document.getElementById('createMerchantForm').style.display = 'none';
+
+        loadMerchants();
+        alert('Merchant added');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function loadMerchants() {
+      try {
+        const merchants = await supabaseQuery('merchants', 'GET', null, '?order=created_at.desc');
+        const box = document.getElementById('merchantsContainer');
+
+        // keep the card-design dropdown in sync
+        const select = document.getElementById('designMerchant');
+        if (select) {
+          select.innerHTML = '<option value="">Select a merchant...</option>' +
+            (merchants || []).map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+        }
+
+        if (!merchants || merchants.length === 0) {
+          box.innerHTML = '<p style="color:#aaa;">No merchants yet. Add one before creating a card.</p>';
+          return;
+        }
+
+        box.innerHTML = merchants.map(m => `
+          <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;border:1px solid #ffffff14;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              ${m.logo_url ? `<img src="${m.logo_url}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">` : ''}
+              <div>
+                <p style="margin:0;font-weight:950;">${m.name}</p>
+                <p style="margin:3px 0 0 0;font-size:11px;color:#888;">${m.contact_email || 'No contact on file'}</p>
+              </div>
+            </div>
+            <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('merchantsContainer').innerHTML = '<p style="color:#f66;">Error loading merchants</p>';
+      }
+    }
+
+    async function deleteMerchant(id) {
+      if (!confirm('Delete this merchant?')) return;
+      try {
+        await supabaseQuery(`merchants?id=eq.${id}`, 'DELETE');
+        loadMerchants();
+      } catch (error) {
+        alert('Could not delete — this merchant probably has cards attached.');
+      }
+    }
+
+    // ===== CARD DESIGNS =====
+
+    function updateSplitPreview() {
+      const price = parseFloat(document.getElementById('designPrice').value) || 0;
+      const share = parseFloat(document.getElementById('designShare').value) || 0;
+      const team = price * (share / 100);
+      const el = document.getElementById('splitPreview');
+      if (el) el.textContent = `Team keeps ${money(team)} · Platform keeps ${money(price - team)}`;
+    }
+
+    async function createDesign() {
+      const merchantId = document.getElementById('designMerchant').value;
+      const name = document.getElementById('designName').value.trim();
+      const price = parseFloat(document.getElementById('designPrice').value);
+      const share = parseInt(document.getElementById('designShare').value, 10);
+
+      if (!merchantId) { alert('Select a merchant'); return; }
+      if (!name) { alert('Enter a card name'); return; }
+      if (!price || price <= 0) { alert('Enter a price'); return; }
+
+      try {
+        await supabaseQuery('card_designs', 'POST', {
+          merchant_id: merchantId,
+          name,
+          tab_count: parseInt(document.getElementById('designTabs').value, 10),
+          price,
+          team_share_pct: share,
+          offer_text: document.getElementById('designOffer').value.trim() || 'Buy One Get One Free',
+          terms: document.getElementById('designTerms').value.trim() || null,
+          expires_on: document.getElementById('designExpires').value || null
+        }, '?select=*');
+
+        document.getElementById('designName').value = '';
+        document.getElementById('designTerms').value = '';
+        document.getElementById('createDesignForm').style.display = 'none';
+
+        loadDesigns();
+        alert('Card created');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function loadDesigns() {
+      try {
+        const designs = await supabaseQuery('card_designs', 'GET', null,
+          '?select=*,merchants(name)&order=created_at.desc');
+        const box = document.getElementById('designsContainer');
+
+        if (!designs || designs.length === 0) {
+          box.innerHTML = '<p style="color:#aaa;">No cards yet. Add a merchant, then create a card.</p>';
+          return;
+        }
+
+        box.innerHTML = designs.map(d => {
+          const team = Number(d.price) * (d.team_share_pct / 100);
+          return `
+            <div style="padding:14px;background:#0e0a11;border-radius:9px;margin:10px 0;border:1px solid #ffffff14;">
+              <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+                <div style="flex:1;">
+                  <p style="margin:0;font-weight:950;font-size:16px;">${d.name}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.merchants ? d.merchants.name : 'Merchant'} · ${d.tab_count} tabs · ${d.offer_text}</p>
+                  <p style="margin:6px 0 0 0;font-size:13px;">
+                    <span style="color:var(--gold);font-weight:950;">${money(d.price)}</span>
+                    <span style="color:#888;"> — team ${money(team)} / platform ${money(Number(d.price) - team)}</span>
+                  </p>
+                  ${d.expires_on ? `<p style="margin:4px 0 0 0;font-size:11px;color:#888;">Expires ${d.expires_on}</p>` : ''}
+                  <p style="margin:6px 0 0 0;font-size:11px;color:${d.active === false ? '#f66' : '#6f6'};">${d.active === false ? 'Inactive' : 'Active'}</p>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                  <button class="btn alt" onclick="toggleDesignActive('${d.id}', ${d.active === false})" style="padding:6px 10px;font-size:11px;">${d.active === false ? 'Activate' : 'Deactivate'}</button>
+                  <button class="btn red" onclick="deleteDesign('${d.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('designsContainer').innerHTML = '<p style="color:#f66;">Error loading cards</p>';
+      }
+    }
+
+    async function toggleDesignActive(id, makeActive) {
+      try {
+        await supabaseQuery(`card_designs?id=eq.${id}`, 'PATCH', { active: makeActive });
+        loadDesigns();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function deleteDesign(id) {
+      if (!confirm('Delete this card design?')) return;
+      try {
+        await supabaseQuery(`card_designs?id=eq.${id}`, 'DELETE');
+        loadDesigns();
+      } catch (error) {
+        alert('Could not delete — cards have already been sold with this design. Deactivate it instead.');
+      }
+    }
+
+    // ===== CAMPAIGNS =====
+
     async function createCampaign() {
       const name = document.getElementById('campaignName').value;
       const goal = document.getElementById('campaignGoal').value;
@@ -214,7 +479,6 @@
         const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         const adminCode = 'ADMIN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         
-        // Create campaign with select to get the response
         const campaign = await supabaseQuery('campaigns', 'POST', {
           name,
           goal: parseFloat(goal),
@@ -226,16 +490,12 @@
           throw new Error('No response from Supabase');
         }
         
-        const campaignId = campaign[0].id;
-        
-        // Create coach for campaign
         await supabaseQuery('coaches', 'POST', {
-          campaign_id: campaignId,
+          campaign_id: campaign[0].id,
           name: 'Head Coach',
           access_code: coachCode
         }, '?select=*');
         
-        // Clear form and reload
         document.getElementById('campaignName').value = '';
         document.getElementById('campaignGoal').value = '';
         document.getElementById('campaignDesc').value = '';
@@ -249,7 +509,6 @@
       }
     }
 
-    // Load campaigns
     async function loadCampaigns() {
       try {
         const campaigns = await supabaseQuery('campaigns', 'GET', null, '?order=created_at.desc');
@@ -261,7 +520,6 @@
         
         let html = '';
         for (let c of campaigns) {
-          // Get coach for this campaign
           const coaches = await supabaseQuery('coaches', 'GET', null, `?campaign_id=eq.${c.id}&limit=1`);
           const coachCode = coaches && coaches.length > 0 ? coaches[0].access_code : 'N/A';
           
@@ -278,7 +536,6 @@
                   </p>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
-                  <button class="btn alt" onclick="editCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">Edit</button>
                   <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">Delete</button>
                 </div>
               </div>
@@ -293,18 +550,11 @@
       }
     }
 
-    // Copy to clipboard helper
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text);
       alert('Coach code copied!');
     }
 
-    // Edit campaign (placeholder)
-    function editCampaign(campaignId) {
-      alert('Edit feature coming soon for campaign: ' + campaignId);
-    }
-
-    // Delete campaign
     async function deleteCampaign(campaignId) {
       if (!confirm('Are you sure? This will delete all associated data.')) return;
       
@@ -318,7 +568,8 @@
       }
     }
 
-    // Coach unlock
+    // ===== COACH =====
+
     async function unlockCoach() {
       const code = document.getElementById('coachCode').value;
       
@@ -344,7 +595,6 @@
       }
     }
 
-    // Load coach dashboard
     async function loadCoachDashboard() {
       try {
         const campaignId = sessionStorage.getItem('currentCampaignId');
@@ -361,10 +611,21 @@
           playersList.innerHTML = '<p style="color:#aaa;">No players yet</p>';
           return;
         }
+
+        // team share raised per player
+        const cards = await supabaseQuery('cards', 'GET', null, `?campaign_id=eq.${campaignId}&select=player_id,team_amount`);
+        const raisedBy = {};
+        (cards || []).forEach(c => {
+          if (!c.player_id) return;
+          raisedBy[c.player_id] = (raisedBy[c.player_id] || 0) + Number(c.team_amount || 0);
+        });
         
         playersList.innerHTML = players.map((p) => `
           <div style="padding:10px;background:#0e0a11;border-radius:9px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;">
-            <span>${p.name}</span>
+            <div>
+              <span>${p.name}</span>
+              <span style="color:var(--gold);font-weight:950;margin-left:8px;">${money(raisedBy[p.id] || 0)}</span>
+            </div>
             <span style="display:flex;gap:6px;flex-shrink:0;">
               <button class="btn" onclick="copyPlayerLink('${p.id}')" style="padding:5px 10px;font-size:11px;">Copy Link</button>
               <button class="btn alt" onclick="removePlayer('${p.id}')" style="padding:5px 10px;font-size:11px;">Remove</button>
@@ -376,7 +637,6 @@
       }
     }
 
-    // Build and copy a player's personal link
     function copyPlayerLink(playerId) {
       const link = window.location.origin + window.location.pathname + '?player=' + playerId;
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -388,7 +648,6 @@
       }
     }
 
-    // Add player
     async function addPlayer() {
       const name = document.getElementById('playerName').value;
       if (!name) {
@@ -397,12 +656,9 @@
       }
       
       try {
-        const campaignId = sessionStorage.getItem('currentCampaignId');
-        const coachId = sessionStorage.getItem('currentCoachId');
-        
         await supabaseQuery('players', 'POST', {
-          campaign_id: campaignId,
-          coach_id: coachId,
+          campaign_id: sessionStorage.getItem('currentCampaignId'),
+          coach_id: sessionStorage.getItem('currentCoachId'),
           name,
           status: 'active'
         }, '?select=*');
@@ -416,7 +672,6 @@
       }
     }
 
-    // Remove player
     async function removePlayer(playerId) {
       if (!confirm('Remove this player?')) return;
       try {
@@ -428,7 +683,7 @@
       }
     }
 
-    // ===== PLAYER VIEW (opened via personal link, no code needed) =====
+    // ===== PLAYER VIEW (personal link) =====
 
     function getPlayerIdFromUrl() {
       return new URLSearchParams(window.location.search).get('player');
@@ -442,7 +697,7 @@
           box.innerHTML = `
             <div class="panel">
               <h3>No player link</h3>
-              <p style="color:#aaa;">This page opens from a personal link. Ask your coach to send you your link — it ends in <code>?player=</code> followed by your ID.</p>
+              <p style="color:#aaa;">This page opens from a personal link. Ask your coach to send you your link.</p>
             </div>`;
           return;
         }
@@ -460,27 +715,34 @@
           const campaigns = await supabaseQuery('campaigns', 'GET', null, `?id=eq.${player.campaign_id}`);
           const campaign = campaigns && campaigns.length > 0 ? campaigns[0] : null;
 
-          const cards = await supabaseQuery('cards', 'GET', null, `?player_id=eq.${playerId}&order=created_at.desc`);
-          const list = cards || [];
+          const cards = await supabaseQuery('cards', 'GET', null,
+            `?player_id=eq.${playerId}&select=*,card_designs(name,tab_count,offer_text,merchants(name))&order=created_at.desc`);
+          const sold = cards || [];
+          const raised = sold.reduce((sum, c) => sum + Number(c.team_amount || 0), 0);
 
-          const sealed = list.filter(c => c.status === 'sealed').length;
-          const revealed = list.filter(c => c.status === 'revealed').length;
-          const redeemed = list.filter(c => c.status === 'redeemed').length;
-          const raised = list.filter(c => c.status !== 'sealed').reduce((sum, c) => sum + Number(c.value || 0), 0);
+          const designs = await supabaseQuery('card_designs', 'GET', null,
+            '?active=eq.true&select=*,merchants(name)&order=created_at.desc');
 
-          let cardsHtml;
-          if (list.length === 0) {
-            cardsHtml = '<p style="color:#aaa;">No cards yet — your coach hasn\'t generated them.</p>';
-          } else {
-            cardsHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;">' +
-              list.map(c => `
-                <div style="padding:14px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;">
-                  <p style="margin:0;font-size:20px;">${c.status === 'sealed' ? '🔒' : (c.status === 'redeemed' ? '✅' : '✓')}</p>
-                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;text-transform:capitalize;">${c.status}</p>
-                  <p style="margin:4px 0 0 0;font-weight:950;color:var(--gold);">${c.status === 'sealed' ? '?' : '$' + c.value}</p>
-                </div>`).join('') +
-              '</div>';
-          }
+          const buyHtml = (designs || []).length === 0
+            ? '<p style="color:#aaa;">No cards available yet.</p>'
+            : designs.map(d => `
+                <div style="padding:14px;background:#0e0a11;border-radius:12px;margin:10px 0;border:1px solid #ffffff14;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                  <div>
+                    <p style="margin:0;font-weight:950;">${d.merchants ? d.merchants.name : d.name}</p>
+                    <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.tab_count} coupon tabs · ${d.offer_text}</p>
+                    <p style="margin:4px 0 0 0;font-size:12px;color:var(--gold);font-weight:950;">${money(d.price)}</p>
+                  </div>
+                  <button class="btn" onclick="buyCard('${d.id}', '${player.campaign_id}', '${player.id}')" style="flex-shrink:0;">Buy</button>
+                </div>`).join('');
+
+          const soldHtml = sold.length === 0
+            ? '<p style="color:#aaa;">No cards sold yet. Share your link to get started.</p>'
+            : sold.map(c => `
+                <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;border:1px solid #ffffff14;">
+                  <p style="margin:0;font-weight:950;font-family:monospace;color:var(--gold);">${c.card_token || '—'}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${c.card_designs ? c.card_designs.name : 'Card'} · ${c.buyer_name || 'Supporter'}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;">Team share: <strong style="color:var(--gold);">${money(c.team_amount)}</strong></p>
+                </div>`).join('');
 
           box.innerHTML = `
             <div class="panel" style="margin-bottom:16px;">
@@ -488,28 +750,25 @@
               <p style="margin:6px 0 0 0;color:#aaa;font-size:13px;">${campaign ? campaign.name : 'Campaign'}</p>
             </div>
 
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:18px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
               <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Raised</p>
-                <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;color:var(--gold);">$${raised}</p>
+                <p style="margin:0;font-size:12px;color:#aaa;">Raised for team</p>
+                <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;color:var(--gold);">${money(raised)}</p>
               </div>
               <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Sealed</p>
-                <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;">${sealed}</p>
-              </div>
-              <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Revealed</p>
-                <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;">${revealed}</p>
-              </div>
-              <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-                <p style="margin:0;font-size:12px;color:#aaa;">Redeemed</p>
-                <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;">${redeemed}</p>
+                <p style="margin:0;font-size:12px;color:#aaa;">Cards sold</p>
+                <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;">${sold.length}</p>
               </div>
             </div>
 
+            <div class="panel" style="margin-bottom:16px;">
+              <h3>Support ${player.name}</h3>
+              <div style="margin-top:12px;">${buyHtml}</div>
+            </div>
+
             <div class="panel">
-              <h3>My Cards</h3>
-              <div style="margin-top:14px;">${cardsHtml}</div>
+              <h3>Cards Sold</h3>
+              <div style="margin-top:12px;">${soldHtml}</div>
             </div>
 
             <button class="btn alt" onclick="sharePlayerLink()" style="margin-top:18px;">Copy My Share Link</button>
@@ -532,7 +791,40 @@
       }
     }
 
-    // Refresh the player view whenever the Player tab is clicked
+    // ===== BUY (Stripe Checkout) =====
+
+    async function buyCard(designId, campaignId, playerId) {
+      const buyerName = prompt('Your name (so the player knows who supported them):', '');
+      if (buyerName === null) return;
+
+      const base = window.location.origin + window.location.pathname;
+
+      try {
+        const res = await fetch(`${PAYMENT_SERVER}/create-checkout-session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            design_id: designId,
+            campaign_id: campaignId,
+            player_id: playerId,
+            buyer_name: buyerName || 'Supporter',
+            success_url: `${base}?player=${playerId}&purchase=success`,
+            cancel_url: `${base}?player=${playerId}&purchase=cancelled`
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.url) throw new Error(data.error || 'Could not start checkout');
+
+        window.location.href = data.url;
+      } catch (error) {
+        console.error('Checkout error:', error);
+        alert('Could not start checkout: ' + error.message);
+      }
+    }
+
+    // ===== PAGE WIRING =====
+
     document.addEventListener('click', function (e) {
       const tab = e.target.closest ? e.target.closest('.tab') : null;
       if (tab && tab.getAttribute('data-tab') === 'player') {
@@ -540,8 +832,20 @@
       }
     });
 
-    // If the page was opened with a personal link, jump straight to the Player tab
     document.addEventListener('DOMContentLoaded', function () {
+      const params = new URLSearchParams(window.location.search);
+
+      ['designPrice', 'designShare'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateSplitPreview);
+      });
+
+      if (params.get('purchase') === 'success') {
+        alert('Thank you! Your card is being created — it will appear in a few seconds.');
+      } else if (params.get('purchase') === 'cancelled') {
+        alert('Checkout cancelled — nothing was charged.');
+      }
+
       if (getPlayerIdFromUrl()) {
         if (typeof showTab === 'function') showTab('player');
         loadPlayerView();
