@@ -1,1 +1,43 @@
+<div class="wrap">
+  <h2>Supporter</h2>
+  <div class="panel">
+    <h3>Support the Campaign</h3>
+    
+    <p>Help support this Basketball Money campaign by purchasing tickets or making a donation.</p>
+    
+    <label>Select Amount</label>
+    <select id="supportAmount">
+      <option value="">Choose an amount</option>
+      <option value="5">$5</option>
+      <option value="10">$10</option>
+      <option value="25">$25</option>
+      <option value="50">$50</option>
+      <option value="100">$100</option>
+    </select>
+    
+    <label>Your Name</label>
+    <input type="text" id="supporterName" placeholder="Enter your name">
+    
+    <label>Email</label>
+    <input type="email" id="supporterEmail" placeholder="Enter your email">
+    
+    <button class="btn" onclick="supportCampaign()">Continue to Payment</button>
+    
+    <div id="supportSuccess" style="display:none;margin-top:20px;padding:15px;background:#14331e;border:1px solid #285f39;border-radius:10px;color:#9aeeb3;">
+      <p><strong>Thank you for your support!</strong></p>
+      <p>Your contribution means a lot to this campaign.</p>
+    </div>
+  </div>
+</div>
 
+<script>
+function supportCampaign() {
+  const amount = document.getElementById('supportAmount').value;
+  const name = document.getElementById('supporterName').value;
+  if (amount && name) {
+    document.getElementById('supportSuccess').style.display = 'block';
+  } else {
+    alert('Please fill in all fields');
+  }
+}
+</script>
