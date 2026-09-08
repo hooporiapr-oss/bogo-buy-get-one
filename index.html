@@ -159,7 +159,7 @@ const campaign = await response.json();
         
         // Create coach entry for this campaign
         await supabaseCall('coaches', 'POST', {
-          campaign_id: campaign[0].id,
+          campaign_id: campaign.id,
           name: 'Head Coach',
           access_code: coachCode
         });
