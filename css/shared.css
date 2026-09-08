@@ -1,1 +1,236 @@
+/* Basketball Money - Shared Styles */
 
+:root {
+  --bg: #0b0810;
+  --panel: #17121c;
+  --panel2: #211329;
+  --purple: #5b2377;
+  --purple2: #341144;
+  --gold: #e7be59;
+  --gold2: #f4d981;
+  --muted: #bdb4c1;
+  --green: #70d995;
+  --red: #ff8c8c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: #fff;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif;
+}
+
+.k {
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: clamp(40px, 6vw, 70px);
+  line-height: 0.97;
+  letter-spacing: -3px;
+  margin: 12px 0 18px;
+}
+
+h2 {
+  font-size: 34px;
+  margin: 0 0 12px;
+}
+
+h3 {
+  margin: 0 0 8px;
+}
+
+p {
+  color: #d0c7d4;
+  line-height: 1.55;
+}
+
+.wrap {
+  max-width: 1180px;
+  margin: auto;
+  padding: 0 22px;
+}
+
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #0b0810ec;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #ffffff15;
+}
+
+.navin {
+  min-height: 72px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 950;
+}
+
+.brand img {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.tab {
+  border: 1px solid #ffffff1a;
+  background: #ffffff08;
+  color: #fff;
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  background: #ffffff12;
+}
+
+.tab.active {
+  background: var(--gold);
+  color: #17100b;
+}
+
+header {
+  padding: 56px 0;
+  background: radial-gradient(circle at 80% 8%, #5f1f7e66, transparent 34%), linear-gradient(160deg, #0d0911, #1c0d25);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 38px;
+  align-items: center;
+  aspect-ratio: auto;
+}
+
+.hero img {
+  width: 100%;
+  border-radius: 20px;
+  box-shadow: 0 28px 70px #0009;
+}
+
+section {
+  padding: 56px 0;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid #ffffff16;
+  border-radius: 18px;
+  padding: 22px;
+  margin-top: 20px;
+}
+
+.btn {
+  border: 0;
+  background: linear-gradient(var(--gold2), var(--gold));
+  color: #17100b;
+  padding: 13px 17px;
+  border-radius: 10px;
+  font-weight: 950;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn:hover {
+  transform: scale(1.02);
+}
+
+.btn.alt {
+  background: #ffffff08;
+  color: #fff;
+  border: 1px solid #ffffff1f;
+}
+
+.btn.dark {
+  background: #17100b;
+  color: white;
+}
+
+.btn.red {
+  background: #3a1717;
+  color: #ffb0b0;
+  border: 1px solid #6a2a2a;
+}
+
+input, select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 9px;
+  border: 1px solid #ffffff1d;
+  background: #0e0a11;
+  color: #fff;
+  margin-top: 6px;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: #b7acbc;
+  font-weight: 850;
+  margin-top: 12px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media(max-width:900px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+  .tabs {
+    justify-content: flex-start;
+  }
+}
+
+@media(max-width:560px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+  h1 {
+    letter-spacing: -2px;
+  }
+}
