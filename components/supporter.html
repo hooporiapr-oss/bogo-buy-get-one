@@ -1,28 +1,6 @@
 <div class="wrap">
-  <h2>Supporter</h2>
-  <div class="panel">
-    <h3>Peel Cards to Support</h3>
-    <p>Click any card to reveal its value and support the team!</p>
-    
-    <div id="cardGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-top:20px;">
-      <!-- Cards will load here -->
-    </div>
-    
-    <div style="margin-top:30px;padding:15px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-      <p style="margin:0;font-size:12px;color:#aaa;">💡 How it works:</p>
-      <p style="margin:8px 0 0 0;font-size:13px;">Click a locked card (🔒) to peel it and reveal the value. Each card supports a specific player on the team.</p>
-    </div>
+  <h2>My Card</h2>
+  <div id="supporterContent">
+    <p style="color:#aaa;">Loading...</p>
   </div>
 </div>
-
-<script>
-// Load cards when this component appears
-window.addEventListener('tabChanged', function(e) {
-  if (e.detail.tab === 'supporter') {
-    setTimeout(loadSupporterCards, 100);
-  }
-});
-
-// Also load on initial load
-setTimeout(loadSupporterCards, 500);
-</script>
