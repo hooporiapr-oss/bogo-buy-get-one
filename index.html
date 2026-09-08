@@ -180,7 +180,7 @@
           name,
           goal: parseFloat(goal),
           description: desc,
-          admin_code: 'admin123'
+          admin_code: 'ADMIN-' + Math.random().toString(36).substr(2, 9).toUpperCase()
         });
         
         // Create coach for campaign
