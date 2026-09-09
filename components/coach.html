@@ -2,13 +2,17 @@
   <h2 data-i18n="tabCoach">Coach</h2>
 
   <div id="coachLocked" class="panel">
-    <h3 data-i18n="coachAccess">Coach Access</h3>
-    <p data-i18n="coachAccessBody">Enter your coach code to manage your roster.</p>
+    <h3 data-i18n="coachSignIn">Coach Sign In</h3>
+    <p data-i18n="coachSignInBody">Enter the email your campaign was set up with.</p>
 
-    <label data-i18n="coachCode">Coach Code</label>
-    <input type="text" id="coachCode" data-i18n-ph="coachCodePh" placeholder="COACH-XXXXXXXX">
+    <label data-i18n="emailLabel">Email</label>
+    <input type="email" id="coachEmailInput" data-i18n-ph="emailPh" placeholder="you@example.com" autocomplete="email">
 
-    <button class="btn" onclick="unlockCoach()" style="margin-top:12px;" data-i18n="unlock">Unlock</button>
+    <button class="btn" onclick="sendMagicLink('coachEmailInput','coachAuthStatus')" style="margin-top:12px;" data-i18n="sendLink">Send sign-in link</button>
+
+    <p id="coachAuthStatus" style="margin:14px 0 0 0;font-size:13px;color:#aaa;"></p>
+
+    <div id="coachPicker" style="display:none;margin-top:16px;"></div>
   </div>
 
   <div id="coachUnlockedContent" style="display:none;">
@@ -28,5 +32,7 @@
 
       <div id="playersList" style="margin-top:18px;"></div>
     </div>
+
+    <button class="btn red" onclick="coachLogout()" style="margin-top:20px;width:100%;" data-i18n="logout">Logout</button>
   </div>
 </div>
