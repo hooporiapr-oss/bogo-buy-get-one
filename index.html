@@ -7,24 +7,76 @@
 
   <link rel="stylesheet" href="css/shared.css">
   <script src="js/tabs.js"></script>
+
+  <style>
+    /* Hamburger nav — overrides shared.css for the nav area only */
+    .navin { display:flex; align-items:center; justify-content:space-between; gap:12px; position:relative; }
+
+    .brandtext {
+      font-weight:950; letter-spacing:.5px; font-size:16px; line-height:1.1;
+      color:#fff; text-decoration:none; text-transform:uppercase; white-space:nowrap;
+    }
+    .brandtext span { color:var(--gold, #f5c542); }
+
+    .navright { display:flex; align-items:center; gap:8px; }
+
+    .hamburger {
+      display:flex; flex-direction:column; justify-content:center; gap:5px;
+      width:42px; height:38px; padding:9px 10px; cursor:pointer;
+      background:#ffffff10; border:1px solid #ffffff2a; border-radius:9px;
+    }
+    .hamburger span {
+      display:block; height:2px; width:100%; background:#fff; border-radius:2px;
+      transition:transform .2s ease, opacity .2s ease;
+    }
+    .hamburger.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity:0; }
+    .hamburger.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+
+    #navMenu {
+      display:none; position:absolute; top:calc(100% + 10px); right:0; z-index:60;
+      min-width:210px; padding:8px;
+      background:#150f1b; border:1px solid #ffffff1f; border-radius:14px;
+      box-shadow:0 18px 44px #000a;
+    }
+    #navMenu.open { display:block; }
+
+    #navMenu .tab {
+      display:block; width:100%; text-align:left; margin:2px 0;
+      padding:12px 14px; font-size:14px; font-weight:700;
+      background:transparent; border:none; border-radius:9px;
+      color:#e9e4ee; cursor:pointer;
+    }
+    #navMenu .tab:hover { background:#ffffff12; }
+    #navMenu .tab.active { background:#5b2377; color:#fff; }
+
+    #langToggle {
+      padding:9px 13px; border-radius:9px; border:1px solid #ffffff2a;
+      background:#ffffff10; color:#fff; cursor:pointer; font-size:12px; font-weight:800;
+    }
+  </style>
 </head>
 <body>
   <nav>
     <div class="wrap">
       <div class="navin">
-        <div class="brand">
-          <a href="index.html" title="Basketball Money">
-            <img src="bball-money.jpg" alt="Basketball Money" style="width:50px;height:50px;border-radius:10px;display:block;cursor:pointer;">
-          </a>
+        <a href="index.html" class="brandtext">Basketball <span>Money</span></a>
+
+        <div class="navright">
+          <button id="langToggle" onclick="toggleLang()">ES</button>
+
+          <div class="hamburger" id="hamburger" onclick="toggleNav()" aria-label="Menu" role="button" tabindex="0">
+            <span></span><span></span><span></span>
+          </div>
         </div>
-        <div class="tabs">
+
+        <div id="navMenu" class="tabs">
           <button class="tab active" data-tab="admin" data-i18n="tabAdmin">Admin</button>
           <button class="tab" data-tab="player" data-i18n="tabPlayer">Player</button>
           <button class="tab" data-tab="supporter" data-i18n="tabSupporter">Supporter</button>
           <button class="tab" data-tab="merchant" data-i18n="tabMerchant">Merchant</button>
           <button class="tab" data-tab="sponsor" data-i18n="tabSponsor">Sponsor</button>
           <button class="tab" data-tab="coach" data-i18n="tabCoach">Coach</button>
-          <button id="langToggle" onclick="toggleLang()" style="padding:6px 12px;border-radius:8px;border:1px solid #ffffff2a;background:#ffffff10;color:#fff;cursor:pointer;font-size:12px;font-weight:700;margin-left:8px;">ES</button>
         </div>
       </div>
     </div>
@@ -1884,6 +1936,26 @@
         console.error('Hero campaign stat:', e);
       }
     }
+
+    // ===== NAV =====
+
+    function toggleNav(force) {
+      const menu = document.getElementById('navMenu');
+      const burger = document.getElementById('hamburger');
+      if (!menu) return;
+      const open = (typeof force === 'boolean') ? force : !menu.classList.contains('open');
+      menu.classList.toggle('open', open);
+      if (burger) burger.classList.toggle('open', open);
+    }
+
+    // Close after picking a tab, and when tapping outside the menu.
+    document.addEventListener('click', function (e) {
+      const menu = document.getElementById('navMenu');
+      if (!menu || !menu.classList.contains('open')) return;
+      if (e.target.closest && e.target.closest('.tab')) { toggleNav(false); return; }
+      if (e.target.closest && (e.target.closest('#navMenu') || e.target.closest('#hamburger'))) return;
+      toggleNav(false);
+    });
 
     // ===== PAGE WIRING =====
 
