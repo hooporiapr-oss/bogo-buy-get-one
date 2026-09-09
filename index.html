@@ -225,6 +225,7 @@
       </div>
     </section>
 
+    <section id="view-team" class="view"></section>
     <section id="view-player" class="view"></section>
     <section id="view-supporter" class="view"></section>
     <section id="view-merchant" class="view"></section>
@@ -334,6 +335,12 @@
         tooManyRequests:'Too many sign-in requests. Wait about 20 minutes and try once more.',
         signupsClosed:'That email cannot sign in yet. Ask your admin to add it.',
         linkNetwork:'Could not reach the server. Check your connection and try again.',
+        noTeamLink:'No team selected.', teamNotFound:'Team not found',
+        teamNotFoundBody:'Check the link, or ask the team for a new one.',
+        ofGoal:'of', supportThisTeam:'Support this team',
+        supportTeamBody:'Every card is half to the team. Buy one, use the coupons, help them reach their goal.',
+        ourPlayers:'Our players', ourPlayersBody:'Tap a player to support them directly.',
+        shareTeamLink:'Share this page', teamLink:'Team Link',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -455,6 +462,12 @@
         tooManyRequests:'Demasiadas solicitudes de acceso. Espera unos 20 minutos e intenta una vez m\u00e1s.',
         signupsClosed:'Ese correo todav\u00eda no puede entrar. Pide a tu administrador que lo a\u00f1ada.',
         linkNetwork:'No se pudo conectar al servidor. Revisa tu conexi\u00f3n e intenta de nuevo.',
+        noTeamLink:'No se seleccion\u00f3 ning\u00fan equipo.', teamNotFound:'Equipo no encontrado',
+        teamNotFoundBody:'Verifica el enlace o pide uno nuevo al equipo.',
+        ofGoal:'de', supportThisTeam:'Apoya a este equipo',
+        supportTeamBody:'La mitad de cada tarjeta es para el equipo. Compra una, usa los cupones y ay\u00fadalos a llegar a su meta.',
+        ourPlayers:'Nuestros jugadores', ourPlayersBody:'Toca un jugador para apoyarlo directamente.',
+        shareTeamLink:'Compartir esta p\u00e1gina', teamLink:'Enlace del equipo',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1000,11 +1013,16 @@
         const coachCode = 'COACH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         const adminCode = 'ADMIN-' + Math.random().toString(36).substr(2, 9).toUpperCase();
         
+        const slug = name.toLowerCase().trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).substr(2, 4);
+
         const campaign = await supabaseQuery('campaigns', 'POST', {
           name,
           goal: parseFloat(goal),
           description: desc,
-          admin_code: adminCode
+          admin_code: adminCode,
+          slug
         }, '?select=*');
         
         if (!campaign || !Array.isArray(campaign) || campaign.length === 0) {
@@ -1057,7 +1075,8 @@
                     <button onclick="setCoachEmail('${coachId}', '${coachEmail || ''}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">${coachEmail ? t('change') : t('invite')}</button>
                   </p>
                 </div>
-                <div style="display:flex;gap:6px;flex-shrink:0;">
+                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                  <button class="btn" onclick="copyTeamLink('${c.slug}')" style="padding:6px 10px;font-size:11px;">${t('teamLink')}</button>
                   <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
                 </div>
               </div>
@@ -1341,6 +1360,7 @@
         const earnBox = document.getElementById('coachEarnings');
         if (earnBox) {
           earnBox.innerHTML = `
+            <button class="btn" onclick="copyTeamLink('${campaigns[0].slug}')" style="width:100%;margin-bottom:12px;">${t('teamLink')}</button>
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
               <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
                 <p style="margin:0;font-size:12px;color:#aaa;">${t('teamShareTotal')}</p>
@@ -1581,6 +1601,134 @@
         loadMerchantDashboard();
       } catch (error) {
         alert('Error: ' + error.message);
+      }
+    }
+
+    // ===== TEAM PAGE (public, opened with ?team=slug) =====
+
+    function getTeamSlugFromUrl() {
+      return new URLSearchParams(window.location.search).get('team');
+    }
+
+    async function loadTeamView() {
+      whenReady('teamContent', async (box) => {
+        const slug = getTeamSlugFromUrl();
+        if (!slug) {
+          box.innerHTML = `<div class="panel"><p style="color:#aaa;">${t('noTeamLink')}</p></div>`;
+          return;
+        }
+
+        box.innerHTML = `<p style="color:#aaa;">${t('loading')}</p>`;
+
+        try {
+          const rows = await supabaseQuery('campaigns', 'GET', null,
+            `?slug=eq.${encodeURIComponent(slug)}`);
+          if (!rows || rows.length === 0) {
+            box.innerHTML = `<div class="panel"><h3>${t('teamNotFound')}</h3><p style="color:#aaa;">${t('teamNotFoundBody')}</p></div>`;
+            return;
+          }
+          const campaign = rows[0];
+
+          const cards = await supabaseQuery('cards', 'GET', null,
+            `?campaign_id=eq.${campaign.id}&select=team_amount,player_id`);
+          const sold = cards || [];
+          const raised = sold.reduce((sum, c) => sum + Number(c.team_amount || 0), 0);
+          const goal = Number(campaign.goal || 0);
+          const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+
+          const raisedBy = {};
+          sold.forEach(c => {
+            if (!c.player_id) return;
+            raisedBy[c.player_id] = (raisedBy[c.player_id] || 0) + Number(c.team_amount || 0);
+          });
+
+          const players = await supabaseQuery('players', 'GET', null,
+            `?campaign_id=eq.${campaign.id}&order=created_at.asc`);
+
+          const designs = await supabaseQuery('card_designs', 'GET', null,
+            '?active=eq.true&select=*,merchants(name,logo_url)&order=created_at.desc');
+
+          const buyHtml = (designs || []).length === 0
+            ? `<p style="color:#aaa;">${t('noCardsAvailable')}</p>`
+            : designs.map(d => `
+                <div style="padding:14px;background:#0e0a11;border-radius:12px;margin:10px 0;border:1px solid #ffffff14;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    ${d.merchants && d.merchants.logo_url ? `<img src="${d.merchants.logo_url}" alt="" style="width:42px;height:42px;border-radius:9px;object-fit:cover;">` : ''}
+                    <div>
+                      <p style="margin:0;font-weight:950;">${d.merchants ? d.merchants.name : d.name}</p>
+                      <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.tab_count} ${t('couponTabs')} · ${d.offer_text}</p>
+                      <p style="margin:4px 0 0 0;font-size:12px;color:var(--gold);font-weight:950;">${money(d.price)}</p>
+                    </div>
+                  </div>
+                  <button class="btn" onclick="buyCard('${d.id}', '${campaign.id}', null)" style="flex-shrink:0;">${t('buy')}</button>
+                </div>`).join('');
+
+          const rosterHtml = (players || []).length === 0
+            ? `<p style="color:#aaa;">${t('noPlayers')}</p>`
+            : players.map(p => `
+                <a href="?player=${p.id}" style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px;background:#0e0a11;border-radius:9px;margin:6px 0;border:1px solid #ffffff14;text-decoration:none;color:#e9e4ee;">
+                  <span>${p.name}</span>
+                  <span style="color:var(--gold);font-weight:950;">${money(raisedBy[p.id] || 0)}</span>
+                </a>`).join('');
+
+          box.innerHTML = `
+            <div class="panel" style="margin-bottom:16px;">
+              <h2 style="margin:0;">${campaign.name}</h2>
+              ${campaign.description ? `<p style="margin:8px 0 0 0;color:#aaa;font-size:14px;">${campaign.description}</p>` : ''}
+            </div>
+
+            <div class="panel" style="margin-bottom:16px;">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;">
+                <p style="margin:0;font-size:30px;font-weight:950;color:var(--gold);">${money(raised)}</p>
+                ${goal > 0 ? `<p style="margin:0;font-size:13px;color:#aaa;">${t('ofGoal')} ${money(goal)}</p>` : ''}
+              </div>
+              ${goal > 0 ? `
+                <div style="margin-top:12px;height:10px;background:#ffffff14;border-radius:99px;overflow:hidden;">
+                  <div style="height:100%;width:${pct}%;background:var(--gold);border-radius:99px;"></div>
+                </div>
+                <p style="margin:8px 0 0 0;font-size:12px;color:#888;">${pct}% · ${sold.length} ${t('cardsPlural')}</p>`
+              : `<p style="margin:8px 0 0 0;font-size:12px;color:#888;">${sold.length} ${t('cardsPlural')}</p>`}
+            </div>
+
+            <div class="panel" style="margin-bottom:16px;">
+              <h3>${t('supportThisTeam')}</h3>
+              <p style="margin:6px 0 12px 0;font-size:12px;color:#888;">${t('supportTeamBody')}</p>
+              ${buyHtml}
+            </div>
+
+            <div class="panel">
+              <h3>${t('ourPlayers')}</h3>
+              <p style="margin:6px 0 12px 0;font-size:12px;color:#888;">${t('ourPlayersBody')}</p>
+              ${rosterHtml}
+            </div>
+
+            <button class="btn alt" onclick="shareTeamLink()" style="margin-top:18px;">${t('shareTeamLink')}</button>`;
+        } catch (error) {
+          console.error('Team view:', error);
+          box.innerHTML = '<div class="panel"><p style="color:#f66;">Error: ' + error.message + '</p></div>';
+        }
+      });
+    }
+
+    function shareTeamLink() {
+      const link = window.location.href;
+      if (navigator.share) {
+        navigator.share({ url: link }).catch(() => {});
+        return;
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => alert(t('copied') + '\n\n' + link)).catch(() => prompt(t('copy'), link));
+      } else {
+        prompt(t('copy'), link);
+      }
+    }
+
+    function copyTeamLink(slug) {
+      const link = window.location.origin + window.location.pathname + '?team=' + slug;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => alert(t('copied') + '\n\n' + link)).catch(() => prompt(t('copy'), link));
+      } else {
+        prompt(t('copy'), link);
       }
     }
 
@@ -2042,6 +2190,12 @@
       if (params.get('signin') === 'coach') {
         if (typeof showTab === 'function') showTab('coach');
         initCoach();
+        return;
+      }
+
+      if (getTeamSlugFromUrl()) {
+        if (typeof showTab === 'function') showTab('team');
+        loadTeamView();
         return;
       }
 
