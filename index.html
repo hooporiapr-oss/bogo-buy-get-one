@@ -277,6 +277,16 @@
         unused:'Unused', redeemedStat:'Redeemed', yourCoupons:'Your Coupons',
         couponHelp:'Peel a tab at the register, then hand your phone to the cashier to redeem it.',
         saveCardLink:'Save My Card Link', cardWord:'Card', supporting:'supporting',
+        merchantCode:'Merchant Code', generate:'Generate', copied:'Copied',
+        merchantAccess:'Merchant Access', merchantAccessBody:'Enter the code we gave your business.',
+        merchantCodeLabel:'Merchant Code', merchantCodePh:'MERCH-XXXXXXXX', unlock:'Unlock',
+        badMerchantCode:'Invalid merchant code',
+        noMerchantCards:'No cards have been created for your business yet.',
+        cardsInCirculation:'Cards out there', couponsRedeemed:'Coupons redeemed',
+        couponsPeeled:'Peeled, not used', redemptionRate:'Redemption rate',
+        unusedCoupons:'Still sealed',
+        lookupTitle:'Look up a card', lookupBody:'Type the code from the customer\u2019s card to redeem from this device.',
+        lookupPh:'Card code', lookupBtn:'Find card', notYourCard:'That card is not for your business.',
         quantityPrompt:'How many cards? (each one is separate — keep one, give the rest away)',
         cardsPlural:'cards', checkEmail:'links also sent to your email',
         paymentReceived:'Payment received', buildingCard:'Building your card...',
@@ -359,6 +369,16 @@
         unused:'Sin usar', redeemedStat:'Redimidos', yourCoupons:'Tus cupones',
         couponHelp:'Despega un cupón en el mostrador y entrégale el celular al cajero para redimirlo.',
         saveCardLink:'Guardar mi enlace', cardWord:'Tarjeta', supporting:'apoyando a',
+        merchantCode:'C\u00f3digo del comercio', generate:'Generar', copied:'Copiado',
+        merchantAccess:'Acceso de comercio', merchantAccessBody:'Entra el c\u00f3digo que le dimos a tu negocio.',
+        merchantCodeLabel:'C\u00f3digo del comercio', merchantCodePh:'MERCH-XXXXXXXX', unlock:'Entrar',
+        badMerchantCode:'C\u00f3digo inv\u00e1lido',
+        noMerchantCards:'Todav\u00eda no se han creado tarjetas para tu negocio.',
+        cardsInCirculation:'Tarjetas en circulaci\u00f3n', couponsRedeemed:'Cupones redimidos',
+        couponsPeeled:'Despegados, sin usar', redemptionRate:'Tasa de redenci\u00f3n',
+        unusedCoupons:'Todav\u00eda sellados',
+        lookupTitle:'Buscar una tarjeta', lookupBody:'Escribe el c\u00f3digo de la tarjeta del cliente para redimir desde este equipo.',
+        lookupPh:'C\u00f3digo de la tarjeta', lookupBtn:'Buscar', notYourCard:'Esa tarjeta no es de tu negocio.',
         quantityPrompt:'¿Cuántas tarjetas? (cada una es independiente — quédate con una y regala las demás)',
         cardsPlural:'tarjetas', checkEmail:'los enlaces también van a tu correo',
         paymentReceived:'Pago recibido', buildingCard:'Creando tu tarjeta...',
@@ -405,6 +425,7 @@
       if (document.getElementById('playerContent')) loadPlayerView();
       if (document.getElementById('supporterContent') && getCardTokenFromUrl()) loadSupporterCard();
       if (document.getElementById('playersList')) loadCoachDashboard();
+      if (document.getElementById('merchantStats') && sessionStorage.getItem('currentMerchantId')) loadMerchantDashboard();
     }
 
     // Supabase config
@@ -501,11 +522,14 @@
       if (!name) { alert(t('enterBusiness')); return; }
 
       try {
+        const accessCode = 'MERCH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+
         await supabaseQuery('merchants', 'POST', {
           name,
           logo_url: document.getElementById('merchantLogo').value.trim() || null,
           contact_name: document.getElementById('merchantContact').value.trim() || null,
-          contact_email: document.getElementById('merchantEmail').value.trim() || null
+          contact_email: document.getElementById('merchantEmail').value.trim() || null,
+          access_code: accessCode
         }, '?select=*');
 
         document.getElementById('merchantName').value = '';
@@ -515,7 +539,7 @@
         document.getElementById('createMerchantForm').style.display = 'none';
 
         loadMerchants();
-        alert(t('merchantAdded'));
+        alert(t('merchantAdded') + '\n\n' + t('merchantCode') + ': ' + accessCode);
       } catch (error) {
         console.error('Error:', error);
         alert('Error: ' + error.message);
@@ -540,20 +564,47 @@
         }
 
         box.innerHTML = merchants.map(m => `
-          <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;border:1px solid #ffffff14;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              ${m.logo_url ? `<img src="${m.logo_url}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">` : ''}
-              <div>
-                <p style="margin:0;font-weight:950;">${m.name}</p>
-                <p style="margin:3px 0 0 0;font-size:11px;color:#888;">${m.contact_email || t('noContact')}</p>
+          <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;border:1px solid #ffffff14;">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+              <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                ${m.logo_url ? `<img src="${m.logo_url}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">` : ''}
+                <div>
+                  <p style="margin:0;font-weight:950;">${m.name}</p>
+                  <p style="margin:3px 0 0 0;font-size:11px;color:#888;">${m.contact_email || t('noContact')}</p>
+                </div>
               </div>
+              <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;flex-shrink:0;">${t('delete')}</button>
             </div>
-            <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
+            <p style="margin:8px 0 0 0;padding:8px;background:#1a1420;border-radius:6px;font-family:monospace;font-size:11px;color:var(--gold);border:1px solid #ffffff1a;">
+              ${t('merchantCode')}: <strong>${m.access_code || '—'}</strong>
+              ${m.access_code
+                ? `<button onclick="copyCode('${m.access_code}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">${t('copy')}</button>`
+                : `<button onclick="giveMerchantCode('${m.id}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">${t('generate')}</button>`}
+            </p>
           </div>
         `).join('');
       } catch (error) {
         console.error('Error:', error);
         document.getElementById('merchantsContainer').innerHTML = '<p style="color:#f66;">Error loading merchants</p>';
+      }
+    }
+
+    async function giveMerchantCode(id) {
+      try {
+        const code = 'MERCH-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        await supabaseQuery(`merchants?id=eq.${id}`, 'PATCH', { access_code: code });
+        loadMerchants();
+        alert(t('merchantCode') + ': ' + code);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    function copyCode(text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => alert(t('copied'))).catch(() => prompt(t('copy'), text));
+      } else {
+        prompt(t('copy'), text);
       }
     }
 
@@ -887,6 +938,156 @@
       } catch (error) {
         console.error('Error:', error);
         alert('Error removing player: ' + error.message);
+      }
+    }
+
+    // ===== MERCHANT DASHBOARD =====
+
+    async function unlockMerchant() {
+      const code = (document.getElementById('merchantCode').value || '').trim();
+      if (!code) return;
+
+      try {
+        const rows = await supabaseQuery('merchants', 'GET', null, `?access_code=eq.${encodeURIComponent(code)}`);
+        if (!rows || rows.length === 0) {
+          alert(t('badMerchantCode'));
+          return;
+        }
+        sessionStorage.setItem('currentMerchantId', rows[0].id);
+        document.getElementById('merchantLocked').style.display = 'none';
+        document.getElementById('merchantUnlockedContent').style.display = 'block';
+        loadMerchantDashboard();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function loadMerchantDashboard() {
+      const merchantId = sessionStorage.getItem('currentMerchantId');
+      if (!merchantId) return;
+
+      try {
+        const rows = await supabaseQuery('merchants', 'GET', null, `?id=eq.${merchantId}`);
+        if (!rows || rows.length === 0) return;
+        const merchant = rows[0];
+
+        const nameEl = document.getElementById('merchantNameDisplay');
+        if (nameEl) nameEl.textContent = merchant.name;
+
+        const designs = await supabaseQuery('card_designs', 'GET', null,
+          `?merchant_id=eq.${merchantId}&select=id,name,tab_count`);
+
+        const box = document.getElementById('merchantStats');
+        if (!designs || designs.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;">${t('noMerchantCards')}</p>`;
+          return;
+        }
+
+        const ids = designs.map(d => d.id).join(',');
+        const cards = await supabaseQuery('cards', 'GET', null,
+          `?design_id=in.(${ids})&select=id,card_tabs(status)`);
+        const list = cards || [];
+
+        let sealed = 0, peeled = 0, redeemed = 0;
+        list.forEach(c => (c.card_tabs || []).forEach(tab => {
+          if (tab.status === 'sealed') sealed++;
+          else if (tab.status === 'peeled') peeled++;
+          else if (tab.status === 'redeemed') redeemed++;
+        }));
+
+        const totalTabs = sealed + peeled + redeemed;
+        const rate = totalTabs ? Math.round((redeemed / totalTabs) * 100) : 0;
+
+        box.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">${t('cardsInCirculation')}</p>
+              <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;color:var(--gold);">${list.length}</p>
+            </div>
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">${t('couponsRedeemed')}</p>
+              <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;color:var(--gold);">${redeemed}</p>
+            </div>
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">${t('couponsPeeled')}</p>
+              <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;">${peeled}</p>
+            </div>
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">${t('redemptionRate')}</p>
+              <p style="margin:6px 0 0 0;font-size:26px;font-weight:950;">${rate}%</p>
+            </div>
+          </div>
+          <p style="margin:14px 0 0 0;font-size:12px;color:#888;">${t('unusedCoupons')}: ${sealed}</p>`;
+      } catch (error) {
+        console.error('Merchant dashboard:', error);
+        const box = document.getElementById('merchantStats');
+        if (box) box.innerHTML = '<p style="color:#f66;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    // Counter lookup: staff types a card code and redeems from their own device
+    async function merchantLookup() {
+      const merchantId = sessionStorage.getItem('currentMerchantId');
+      const code = (document.getElementById('lookupCode').value || '').trim().toUpperCase();
+      const box = document.getElementById('lookupResult');
+      if (!code) return;
+
+      box.innerHTML = `<p style="color:#aaa;">${t('loading')}</p>`;
+
+      try {
+        const cards = await supabaseQuery('cards', 'GET', null,
+          `?card_token=eq.${encodeURIComponent(code)}&select=*,card_designs(name,offer_text,merchant_id),card_tabs(id,tab_number,status)`);
+
+        if (!cards || cards.length === 0) {
+          box.innerHTML = `<p style="color:#f66;">${t('cardNotFound')}</p>`;
+          return;
+        }
+
+        const card = cards[0];
+        // A merchant may only touch cards carrying their own offer.
+        if (!card.card_designs || card.card_designs.merchant_id !== merchantId) {
+          box.innerHTML = `<p style="color:#f66;">${t('notYourCard')}</p>`;
+          return;
+        }
+
+        const tabs = (card.card_tabs || []).sort((a, b) => a.tab_number - b.tab_number);
+
+        box.innerHTML = `
+          <p style="margin:0 0 10px 0;font-size:12px;color:#aaa;">${card.card_designs.offer_text} · ${card.buyer_name || ''}</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">
+            ${tabs.map(tb => {
+              if (tb.status === 'redeemed') {
+                return `<div style="padding:14px 10px;background:#0e0a11;border:1px solid #ffffff14;border-radius:12px;text-align:center;opacity:.55;">
+                  <p style="margin:0;font-size:20px;">✅</p>
+                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t('tabWord')} ${tb.tab_number}</p>
+                  <p style="margin:2px 0 0 0;font-size:10px;color:#888;">${t('used')}</p>
+                </div>`;
+              }
+              return `<div style="padding:14px 10px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:12px;text-align:center;">
+                <p style="margin:0;font-size:11px;color:#aaa;">${t('tabWord')} ${tb.tab_number}</p>
+                <button class="btn" onclick="merchantRedeem('${tb.id}')" style="margin-top:8px;padding:5px 10px;font-size:11px;">${t('redeem')}</button>
+              </div>`;
+            }).join('')}
+          </div>`;
+      } catch (error) {
+        box.innerHTML = '<p style="color:#f66;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function merchantRedeem(tabId) {
+      const staff = prompt(t('staffPrompt'), '');
+      if (staff === null) return;
+      try {
+        await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
+          status: 'redeemed',
+          redeemed_at: new Date().toISOString(),
+          redeemed_by: staff || 'Staff'
+        });
+        alert(t('redeemed'));
+        merchantLookup();
+        loadMerchantDashboard();
+      } catch (error) {
+        alert('Error: ' + error.message);
       }
     }
 
@@ -1290,6 +1491,13 @@
       const which = tab.getAttribute('data-tab');
       if (which === 'player') loadPlayerView();
       if (which === 'supporter') loadSupporterCard();
+      if (which === 'merchant' && sessionStorage.getItem('currentMerchantId')) {
+        whenReady('merchantUnlockedContent', (el) => {
+          document.getElementById('merchantLocked').style.display = 'none';
+          el.style.display = 'block';
+          loadMerchantDashboard();
+        });
+      }
     });
 
     document.addEventListener('DOMContentLoaded', function () {
