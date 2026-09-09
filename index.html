@@ -295,6 +295,12 @@
         coachAccess:'Coach Access', coachAccessBody:'Enter your coach code to manage your roster.',
         coachCodePh:'COACH-XXXXXXXX', playerNameLabel:'Player Name', playerNamePh:'Full name',
         addPlayerBtn:'Add Player', playersTitle:'Roster',
+        coachEmail:'Coach email', noCoachYet:'not set', invite:'Set', change:'Change',
+        coachEmailPrompt:'Coach email address (they sign in with this):',
+        coachInvited:'Saved. Tell the coach to open the Coach tab and sign in with:',
+        coachCleared:'Coach email removed', noCoachRecord:'No coach record for this campaign',
+        coachSignIn:'Coach Sign In', coachSignInBody:'Enter the email your campaign was set up with.',
+        pickCampaign:'Which team?',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -403,6 +409,12 @@
         coachAccess:'Acceso de entrenador', coachAccessBody:'Entra tu c\u00f3digo para manejar tu equipo.',
         coachCodePh:'COACH-XXXXXXXX', playerNameLabel:'Nombre del jugador', playerNamePh:'Nombre completo',
         addPlayerBtn:'A\u00f1adir jugador', playersTitle:'Equipo',
+        coachEmail:'Correo del entrenador', noCoachYet:'sin asignar', invite:'Asignar', change:'Cambiar',
+        coachEmailPrompt:'Correo del entrenador (con este entra al sistema):',
+        coachInvited:'Guardado. Dile al entrenador que entre en la pesta\u00f1a Entrenador con:',
+        coachCleared:'Correo del entrenador eliminado', noCoachRecord:'No hay entrenador para esta campa\u00f1a',
+        coachSignIn:'Acceso de entrenador', coachSignInBody:'Entra el correo con el que se cre\u00f3 tu campa\u00f1a.',
+        pickCampaign:'\u00bfCu\u00e1l equipo?',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -519,9 +531,9 @@
       }
     }
 
-    async function sendMagicLink() {
-      const email = (document.getElementById('adminEmail').value || '').trim();
-      const status = document.getElementById('authStatus');
+    async function sendMagicLink(emailFieldId, statusId) {
+      const email = (document.getElementById(emailFieldId || 'adminEmail').value || '').trim();
+      const status = document.getElementById(statusId || 'authStatus');
       if (!email) { alert(t('enterEmail')); return; }
 
       status.textContent = t('sending');
@@ -941,7 +953,8 @@
         let html = '';
         for (let c of campaigns) {
           const coaches = await supabaseQuery('coaches', 'GET', null, `?campaign_id=eq.${c.id}&limit=1`);
-          const coachCode = coaches && coaches.length > 0 ? coaches[0].access_code : 'N/A';
+          const coachEmail = coaches && coaches.length > 0 ? (coaches[0].email || '') : '';
+          const coachId = coaches && coaches.length > 0 ? coaches[0].id : '';
           
           html += `
             <div style="padding:14px;background:#0e0a11;border-radius:9px;margin:10px 0;border:1px solid #ffffff14;">
@@ -950,9 +963,9 @@
                   <p style="margin:0;font-weight:950;font-size:16px;">${c.name}</p>
                   <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${t('goal')}: $${c.goal}</p>
                   <p style="margin:4px 0 0 0;font-size:12px;color:#888;">${c.description || t('noDescription')}</p>
-                  <p style="margin:8px 0 0 0;padding:8px;background:#1a1420;border-radius:6px;font-family:monospace;font-size:11px;color:var(--gold);border:1px solid #ffffff1a;">
-                    ${t('coachCode')}: <strong>${coachCode}</strong>
-                    <button onclick="copyToClipboard('${coachCode}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">${t('copy')}</button>
+                  <p style="margin:8px 0 0 0;padding:8px;background:#1a1420;border-radius:6px;font-size:11px;color:var(--gold);border:1px solid #ffffff1a;">
+                    ${t('coachEmail')}: <strong>${coachEmail || t('noCoachYet')}</strong>
+                    <button onclick="setCoachEmail('${coachId}', '${coachEmail || ''}')" style="margin-left:8px;padding:2px 6px;background:#5b2377;border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:10px;">${coachEmail ? t('change') : t('invite')}</button>
                   </p>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -967,6 +980,21 @@
       } catch (error) {
         console.error('Error:', error);
         document.getElementById('campaignsContainer').innerHTML = '<p style="color:#f66;">Error loading campaigns</p>';
+      }
+    }
+
+    async function setCoachEmail(coachId, current) {
+      if (!coachId) { alert(t('noCoachRecord')); return; }
+      const email = prompt(t('coachEmailPrompt'), current || '');
+      if (email === null) return;
+
+      try {
+        await supabaseQuery(`coaches?id=eq.${coachId}`, 'PATCH', { email: email.trim() || null });
+        loadCampaigns();
+        alert(email.trim() ? t('coachInvited') + '\n\n' + email.trim() : t('coachCleared'));
+      } catch (error) {
+        console.error('Coach email:', error);
+        alert('Error: ' + error.message);
       }
     }
 
@@ -1135,29 +1163,51 @@
 
     // ===== COACH =====
 
-    async function unlockCoach() {
-      const code = document.getElementById('coachCode').value;
-      
-      try {
-        const coaches = await supabaseQuery('coaches', 'GET', null, `?access_code=eq.${code}`);
-        
-        if (!coaches || coaches.length === 0) {
-          alert(t('badCoachCode'));
-          return;
+    // A signed-in coach sees only their own campaign — the database
+    // returns nothing for anyone else, so there is no code to leak.
+    async function initCoach() {
+      if (!AUTH.get()) return;
+
+      whenReady('coachLocked', async () => {
+        try {
+          const coaches = await supabaseQuery('coaches', 'GET', null, '?select=id,campaign_id,name,email');
+          const mine = (coaches || []).filter(c => c.email);
+
+          if (mine.length === 0) return;   // signed in, but not a coach
+
+          if (mine.length === 1) {
+            openCoachCampaign(mine[0]);
+            return;
+          }
+
+          // Coaches one person runs for more than one team.
+          const box = document.getElementById('coachPicker');
+          if (box) {
+            box.innerHTML = `<p style="margin:0 0 8px 0;font-size:13px;color:#aaa;">${t('pickCampaign')}</p>` +
+              mine.map(c => `<button class="btn alt" onclick='openCoachCampaign(${JSON.stringify(c)})' style="display:block;width:100%;margin:6px 0;">${c.name || t('tabCoach')}</button>`).join('');
+            box.style.display = 'block';
+          }
+        } catch (error) {
+          console.error('Coach init:', error);
         }
-        
-        const coach = coaches[0];
-        sessionStorage.setItem('currentCampaignId', coach.campaign_id);
-        sessionStorage.setItem('currentCoachId', coach.id);
-        
-        document.getElementById('coachLocked').style.display = 'none';
-        document.getElementById('coachUnlockedContent').style.display = 'block';
-        
-        loadCoachDashboard();
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error: ' + error.message);
-      }
+      });
+    }
+
+    function openCoachCampaign(coach) {
+      sessionStorage.setItem('currentCampaignId', coach.campaign_id);
+      sessionStorage.setItem('currentCoachId', coach.id);
+      document.getElementById('coachLocked').style.display = 'none';
+      const picker = document.getElementById('coachPicker');
+      if (picker) picker.style.display = 'none';
+      document.getElementById('coachUnlockedContent').style.display = 'block';
+      loadCoachDashboard();
+    }
+
+    async function coachLogout() {
+      sessionStorage.removeItem('currentCampaignId');
+      sessionStorage.removeItem('currentCoachId');
+      await adminLogout();
+      location.reload();
     }
 
     async function loadCoachDashboard() {
@@ -1828,6 +1878,7 @@
       const which = tab.getAttribute('data-tab');
       if (which === 'player') loadPlayerView();
       if (which === 'supporter') loadSupporterCard();
+      if (which === 'coach' && !sessionStorage.getItem('currentCampaignId')) initCoach();
       if (which === 'merchant' && sessionStorage.getItem('currentMerchantId')) {
         whenReady('merchantUnlockedContent', (el) => {
           document.getElementById('merchantLocked').style.display = 'none';
@@ -1843,6 +1894,7 @@
       applyLang();
       loadHeroStats();
       initAdmin();
+      initCoach();
 
       ['designPrice', 'designShare'].forEach(id => {
         const el = document.getElementById(id);
