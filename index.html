@@ -160,6 +160,14 @@
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="margin:0;" data-i18n="payouts">Payouts</h3>
+          </div>
+
+          <div class="panel" style="margin-bottom:26px;">
+            <div id="payoutsContainer">—</div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3 style="margin:0;" data-i18n="campaigns">Campaigns</h3>
             <button class="btn" onclick="toggleForm('createCampaignForm')" data-i18n="newCampaign">+ New Campaign</button>
           </div>
@@ -284,6 +292,14 @@
         linkSent:'Check your email — the sign-in link is on its way. It expires in an hour.',
         linkFailed:'Could not send the link:',
         notAdmin:'That email is not on the admin list.',
+        payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
+        outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
+        owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
+        payoutAmount:'Amount paid to the team ($)', payoutMethod:'How was it paid? (ATH M\u00f3vil, check, transfer)',
+        payoutReference:'Reference or confirmation number (optional)',
+        payoutRecorded:'Payment recorded', badAmount:'Enter a valid amount',
+        noPayouts:'No payments recorded yet', confirmDeletePayout:'Delete this payment record?',
+        earnings:'Earnings',
         merchantCode:'Merchant Code', generate:'Generate', copied:'Copied',
         merchantAccess:'Merchant Access', merchantAccessBody:'Enter the code we gave your business.',
         merchantCodeLabel:'Merchant Code', merchantCodePh:'MERCH-XXXXXXXX', unlock:'Unlock',
@@ -381,6 +397,14 @@
         linkSent:'Revisa tu correo — el enlace de acceso va en camino. Expira en una hora.',
         linkFailed:'No se pudo enviar el enlace:',
         notAdmin:'Ese correo no est\u00e1 en la lista de administradores.',
+        payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
+        outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
+        owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
+        payoutAmount:'Cantidad pagada al equipo ($)', payoutMethod:'\u00bfC\u00f3mo se pag\u00f3? (ATH M\u00f3vil, cheque, transferencia)',
+        payoutReference:'N\u00famero de referencia o confirmaci\u00f3n (opcional)',
+        payoutRecorded:'Pago registrado', badAmount:'Entra una cantidad v\u00e1lida',
+        noPayouts:'Todav\u00eda no hay pagos registrados', confirmDeletePayout:'\u00bfEliminar este registro de pago?',
+        earnings:'Ganancias',
         merchantCode:'C\u00f3digo del comercio', generate:'Generar', copied:'Copiado',
         merchantAccess:'Acceso de comercio', merchantAccessBody:'Entra el c\u00f3digo que le dimos a tu negocio.',
         merchantCodeLabel:'C\u00f3digo del comercio', merchantCodePh:'MERCH-XXXXXXXX', unlock:'Entrar',
@@ -638,6 +662,7 @@
     function loadAdminData() {
       loadMerchants();
       loadDesigns();
+      loadPayouts();
       loadCampaigns();
     }
 
@@ -957,6 +982,151 @@
       }
     }
 
+    // ===== PAYOUTS =====
+
+    async function loadPayouts() {
+      const box = document.getElementById('payoutsContainer');
+      if (!box) return;
+
+      try {
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?select=id,name&order=created_at.desc');
+        if (!campaigns || campaigns.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;">${t('noCampaigns')}</p>`;
+          return;
+        }
+
+        // one read each, then totalled per campaign in the browser
+        const cards = await supabaseQuery('cards', 'GET', null, '?select=campaign_id,team_amount,platform_amount');
+        const paid = await supabaseQuery('payouts', 'GET', null, '?select=campaign_id,amount');
+
+        const owedBy = {}, platformBy = {}, paidBy = {};
+        (cards || []).forEach(c => {
+          owedBy[c.campaign_id] = (owedBy[c.campaign_id] || 0) + Number(c.team_amount || 0);
+          platformBy[c.campaign_id] = (platformBy[c.campaign_id] || 0) + Number(c.platform_amount || 0);
+        });
+        (paid || []).forEach(p => {
+          paidBy[p.campaign_id] = (paidBy[p.campaign_id] || 0) + Number(p.amount || 0);
+        });
+
+        let totalOwed = 0, totalPaid = 0, totalPlatform = 0;
+
+        const rows = campaigns.map(c => {
+          const owed = owedBy[c.id] || 0;
+          const already = paidBy[c.id] || 0;
+          const outstanding = owed - already;
+          totalOwed += owed; totalPaid += already; totalPlatform += platformBy[c.id] || 0;
+
+          return `
+            <div style="padding:14px;background:#0e0a11;border-radius:9px;margin:10px 0;border:1px solid #ffffff14;">
+              <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+                <div style="flex:1;">
+                  <p style="margin:0;font-weight:950;font-size:15px;">${c.name}</p>
+                  <p style="margin:6px 0 0 0;font-size:12px;color:#aaa;">
+                    ${t('teamShareTotal')}: <strong style="color:#fff;">${money(owed)}</strong> ·
+                    ${t('paidOut')}: <strong style="color:#fff;">${money(already)}</strong>
+                  </p>
+                  <p style="margin:6px 0 0 0;font-size:15px;font-weight:950;color:${outstanding > 0.005 ? 'var(--gold)' : '#6f6'};">
+                    ${t('outstanding')}: ${money(outstanding)}
+                  </p>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                  <button class="btn" onclick="recordPayout('${c.id}', ${outstanding.toFixed(2)})" style="padding:6px 10px;font-size:11px;">${t('recordPayment')}</button>
+                  <button class="btn alt" onclick="viewPayoutHistory('${c.id}', '${String(c.name).replace(/'/g, "\\'")}')" style="padding:6px 10px;font-size:11px;">${t('history')}</button>
+                </div>
+              </div>
+              <div id="payoutHistory-${c.id}" style="display:none;margin-top:10px;"></div>
+            </div>`;
+        }).join('');
+
+        box.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px;">
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">${t('owedToTeams')}</p>
+              <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;color:var(--gold);">${money(totalOwed - totalPaid)}</p>
+            </div>
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">${t('paidToDate')}</p>
+              <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;">${money(totalPaid)}</p>
+            </div>
+            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:12px;color:#aaa;">${t('platformShare')}</p>
+              <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;">${money(totalPlatform)}</p>
+            </div>
+          </div>
+          ${rows}`;
+      } catch (error) {
+        console.error('Payouts:', error);
+        box.innerHTML = '<p style="color:#f66;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function recordPayout(campaignId, suggested) {
+      const amountRaw = prompt(t('payoutAmount'), Number(suggested || 0).toFixed(2));
+      if (amountRaw === null) return;
+      const amount = parseFloat(amountRaw);
+      if (!amount || amount <= 0) { alert(t('badAmount')); return; }
+
+      const method = prompt(t('payoutMethod'), '');
+      if (method === null) return;
+
+      const reference = prompt(t('payoutReference'), '');
+      if (reference === null) return;
+
+      try {
+        await supabaseQuery('payouts', 'POST', {
+          campaign_id: campaignId,
+          amount,
+          method: method || null,
+          reference: reference || null
+        }, '?select=*');
+        loadPayouts();
+        alert(t('payoutRecorded'));
+      } catch (error) {
+        console.error('Payout:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function viewPayoutHistory(campaignId) {
+      const box = document.getElementById('payoutHistory-' + campaignId);
+      if (!box) return;
+
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('loading')}</p>`;
+
+      try {
+        const rows = await supabaseQuery('payouts', 'GET', null,
+          `?campaign_id=eq.${campaignId}&order=paid_on.desc`);
+
+        if (!rows || rows.length === 0) {
+          box.innerHTML = `<p style="color:#888;font-size:12px;">${t('noPayouts')}</p>`;
+          return;
+        }
+
+        box.innerHTML = rows.map(r => `
+          <div style="padding:9px;background:#1a1420;border-radius:6px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;">
+            <span>
+              <strong style="color:var(--gold);">${money(r.amount)}</strong>
+              <span style="color:#888;"> · ${r.paid_on}${r.method ? ' · ' + r.method : ''}${r.reference ? ' · ' + r.reference : ''}</span>
+            </span>
+            <button class="btn red" onclick="deletePayout('${r.id}')" style="padding:3px 8px;font-size:10px;flex-shrink:0;">${t('delete')}</button>
+          </div>`).join('');
+      } catch (error) {
+        box.innerHTML = '<p style="color:#f66;font-size:12px;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function deletePayout(id) {
+      if (!confirm(t('confirmDeletePayout'))) return;
+      try {
+        await supabaseQuery(`payouts?id=eq.${id}`, 'DELETE');
+        loadPayouts();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
     // ===== COACH =====
 
     async function unlockCoach() {
@@ -1004,10 +1174,40 @@
         // team share raised per player
         const cards = await supabaseQuery('cards', 'GET', null, `?campaign_id=eq.${campaignId}&select=player_id,team_amount`);
         const raisedBy = {};
+        let campaignRaised = 0;
         (cards || []).forEach(c => {
+          campaignRaised += Number(c.team_amount || 0);
           if (!c.player_id) return;
           raisedBy[c.player_id] = (raisedBy[c.player_id] || 0) + Number(c.team_amount || 0);
         });
+
+        // what the team has been paid so far
+        const paidRows = await supabaseQuery('payouts', 'GET', null,
+          `?campaign_id=eq.${campaignId}&select=amount,paid_on,method,reference&order=paid_on.desc`);
+        const paidTotal = (paidRows || []).reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+        const earnBox = document.getElementById('coachEarnings');
+        if (earnBox) {
+          earnBox.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;">
+              <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+                <p style="margin:0;font-size:12px;color:#aaa;">${t('teamShareTotal')}</p>
+                <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;color:var(--gold);">${money(campaignRaised)}</p>
+              </div>
+              <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+                <p style="margin:0;font-size:12px;color:#aaa;">${t('paidOut')}</p>
+                <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;">${money(paidTotal)}</p>
+              </div>
+              <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
+                <p style="margin:0;font-size:12px;color:#aaa;">${t('outstanding')}</p>
+                <p style="margin:6px 0 0 0;font-size:24px;font-weight:950;">${money(campaignRaised - paidTotal)}</p>
+              </div>
+            </div>
+            ${(paidRows || []).length ? `<div style="margin-top:12px;">` + paidRows.map(r => `
+              <div style="padding:9px;background:#0e0a11;border-radius:6px;margin:5px 0;font-size:12px;color:#aaa;">
+                <strong style="color:var(--gold);">${money(r.amount)}</strong> · ${r.paid_on}${r.method ? ' · ' + r.method : ''}${r.reference ? ' · ' + r.reference : ''}
+              </div>`).join('') + `</div>` : ''}`;
+        }
         
         playersList.innerHTML = players.map((p) => `
           <div style="padding:10px;background:#0e0a11;border-radius:9px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;">
