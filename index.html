@@ -331,6 +331,9 @@
         myCard:'My Card', sponsorSoon:'Coming soon',
         sponsorSoonBody:"Business sponsorships aren't open yet. Get in touch if your company wants to sponsor a team.",
         lockDevice:'Lock this device', signedInAs:'Signed in as',
+        tooManyRequests:'Too many sign-in requests. Wait about 20 minutes and try once more.',
+        signupsClosed:'That email cannot sign in yet. Ask your admin to add it.',
+        linkNetwork:'Could not reach the server. Check your connection and try again.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -449,6 +452,9 @@
         myCard:'Mi tarjeta', sponsorSoon:'Pr\u00f3ximamente',
         sponsorSoonBody:'Los auspicios para negocios todav\u00eda no est\u00e1n abiertos. Comun\u00edcate con nosotros si tu empresa quiere auspiciar un equipo.',
         lockDevice:'Bloquear este equipo', signedInAs:'Conectado como',
+        tooManyRequests:'Demasiadas solicitudes de acceso. Espera unos 20 minutos e intenta una vez m\u00e1s.',
+        signupsClosed:'Ese correo todav\u00eda no puede entrar. Pide a tu administrador que lo a\u00f1ada.',
+        linkNetwork:'No se pudo conectar al servidor. Revisa tu conexi\u00f3n e intenta de nuevo.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -601,11 +607,29 @@
           headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
           body: JSON.stringify({ email, create_user: true })
         });
-        if (!res.ok) throw new Error(await res.text());
+        if (!res.ok) {
+          // Supabase refuses for a few predictable reasons. Say which,
+          // rather than claiming an email is on its way when it isn't.
+          let detail = '';
+          try { detail = (await res.json()).msg || (await res.text()) || ''; }
+          catch (e) { detail = ''; }
+
+          if (res.status === 429) {
+            status.textContent = t('tooManyRequests');
+          } else if (res.status === 422 || /signup|not allowed|disabled/i.test(detail)) {
+            status.textContent = t('signupsClosed');
+          } else {
+            status.textContent = t('linkFailed') + ' ' + (detail || res.status);
+          }
+          console.error('Magic link refused:', res.status, detail);
+          return;
+        }
+
         status.textContent = t('linkSent');
       } catch (error) {
+        // Network-level failure: the request never reached Supabase.
         console.error('Magic link:', error);
-        status.textContent = t('linkFailed') + ' ' + error.message;
+        status.textContent = t('linkNetwork');
       }
     }
 
