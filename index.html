@@ -68,12 +68,14 @@
 
         <div id="adminLoginScreen" class="panel">
           <h3 data-i18n="adminLogin">Admin Login</h3>
-          <p data-i18n="adminLoginBody">Enter your admin password to access campaign management.</p>
+          <p data-i18n="adminLoginBody">Enter your email and we'll send you a sign-in link.</p>
 
-          <label data-i18n="adminPassword">Admin Password</label>
-          <input type="password" id="adminPassword" data-i18n-ph="adminPasswordPh" placeholder="Enter admin password">
+          <label data-i18n="emailLabel">Email</label>
+          <input type="email" id="adminEmail" data-i18n-ph="emailPh" placeholder="you@example.com" autocomplete="email">
 
-          <button class="btn" onclick="adminLogin()" style="margin-top:12px;" data-i18n="login">Login</button>
+          <button class="btn" onclick="sendMagicLink()" style="margin-top:12px;" data-i18n="sendLink">Send sign-in link</button>
+
+          <p id="authStatus" style="margin:14px 0 0 0;font-size:13px;color:#aaa;"></p>
         </div>
 
         <div id="adminDashboard" style="display:none;">
@@ -209,7 +211,7 @@
         supportTeam:'Support a Team', totalRaised:'Total Raised', activeCampaigns:'Active Campaigns',
 
         adminPanel:'Admin Panel', adminLogin:'Admin Login',
-        adminLoginBody:'Enter your admin password to access campaign management.',
+        adminLoginBody:"Enter your email and we'll send you a sign-in link.",
         adminPassword:'Admin Password', adminPasswordPh:'Enter admin password', login:'Login', logout:'Logout',
 
         merchants:'Merchants', newMerchant:'+ New Merchant', addMerchant:'Add Merchant',
@@ -277,6 +279,11 @@
         unused:'Unused', redeemedStat:'Redeemed', yourCoupons:'Your Coupons',
         couponHelp:'Peel a tab at the register, then hand your phone to the cashier to redeem it.',
         saveCardLink:'Save My Card Link', cardWord:'Card', supporting:'supporting',
+        emailLabel:'Email', emailPh:'you@example.com', sendLink:'Send sign-in link',
+        enterEmail:'Enter your email', sending:'Sending...',
+        linkSent:'Check your email — the sign-in link is on its way. It expires in an hour.',
+        linkFailed:'Could not send the link:',
+        notAdmin:'That email is not on the admin list.',
         merchantCode:'Merchant Code', generate:'Generate', copied:'Copied',
         merchantAccess:'Merchant Access', merchantAccessBody:'Enter the code we gave your business.',
         merchantCodeLabel:'Merchant Code', merchantCodePh:'MERCH-XXXXXXXX', unlock:'Unlock',
@@ -301,7 +308,7 @@
         supportTeam:'Apoya a un equipo', totalRaised:'Total recaudado', activeCampaigns:'Campañas activas',
 
         adminPanel:'Panel de administración', adminLogin:'Acceso de administrador',
-        adminLoginBody:'Entra tu contraseña de administrador para manejar las campañas.',
+        adminLoginBody:'Entra tu correo y te enviaremos un enlace de acceso.',
         adminPassword:'Contraseña de administrador', adminPasswordPh:'Entra la contraseña', login:'Entrar', logout:'Cerrar sesión',
 
         merchants:'Comercios', newMerchant:'+ Nuevo comercio', addMerchant:'Añadir comercio',
@@ -369,6 +376,11 @@
         unused:'Sin usar', redeemedStat:'Redimidos', yourCoupons:'Tus cupones',
         couponHelp:'Despega un cupón en el mostrador y entrégale el celular al cajero para redimirlo.',
         saveCardLink:'Guardar mi enlace', cardWord:'Tarjeta', supporting:'apoyando a',
+        emailLabel:'Correo', emailPh:'tu@ejemplo.com', sendLink:'Enviar enlace de acceso',
+        enterEmail:'Entra tu correo', sending:'Enviando...',
+        linkSent:'Revisa tu correo — el enlace de acceso va en camino. Expira en una hora.',
+        linkFailed:'No se pudo enviar el enlace:',
+        notAdmin:'Ese correo no est\u00e1 en la lista de administradores.',
         merchantCode:'C\u00f3digo del comercio', generate:'Generar', copied:'Copiado',
         merchantAccess:'Acceso de comercio', merchantAccessBody:'Entra el c\u00f3digo que le dimos a tu negocio.',
         merchantCodeLabel:'C\u00f3digo del comercio', merchantCodePh:'MERCH-XXXXXXXX', unlock:'Entrar',
@@ -435,14 +447,119 @@
     // Payment server (separate Render web service)
     const PAYMENT_SERVER = 'https://basketball-money-payments.onrender.com';
 
+    // ===== AUTH (magic link) =====
+    // Tokens live in localStorage. When one is present every database
+    // call is made AS that signed-in user, so the database can tell
+    // who is asking. With no token we fall back to the anonymous key,
+    // which is what supporters and players use.
+
+    const AUTH = {
+      get() {
+        try { return JSON.parse(localStorage.getItem('bm_session') || 'null'); }
+        catch (e) { return null; }
+      },
+      set(sess) {
+        if (!sess) { localStorage.removeItem('bm_session'); return; }
+        sess.expires_at = Date.now() + ((sess.expires_in || 3600) * 1000) - 60000;
+        localStorage.setItem('bm_session', JSON.stringify(sess));
+      },
+      clear() { localStorage.removeItem('bm_session'); }
+    };
+
+    // Access tokens last about an hour. Swap an expired one for a
+    // fresh token rather than making the user sign in again.
+    async function currentToken() {
+      const sess = AUTH.get();
+      if (!sess) return null;
+      if (sess.expires_at && Date.now() < sess.expires_at) return sess.access_token;
+
+      try {
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+          body: JSON.stringify({ refresh_token: sess.refresh_token })
+        });
+        if (!res.ok) { AUTH.clear(); return null; }
+        const fresh = await res.json();
+        AUTH.set(fresh);
+        return fresh.access_token;
+      } catch (e) {
+        AUTH.clear();
+        return null;
+      }
+    }
+
+    async function sendMagicLink() {
+      const email = (document.getElementById('adminEmail').value || '').trim();
+      const status = document.getElementById('authStatus');
+      if (!email) { alert(t('enterEmail')); return; }
+
+      status.textContent = t('sending');
+
+      try {
+        const redirect = window.location.origin + window.location.pathname;
+        const res = await fetch(`${SUPABASE_URL}/auth/v1/otp?redirect_to=${encodeURIComponent(redirect)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+          body: JSON.stringify({ email, create_user: true })
+        });
+        if (!res.ok) throw new Error(await res.text());
+        status.textContent = t('linkSent');
+      } catch (error) {
+        console.error('Magic link:', error);
+        status.textContent = t('linkFailed') + ' ' + error.message;
+      }
+    }
+
+    // Supabase puts the tokens in the URL fragment after sign-in.
+    function captureSessionFromUrl() {
+      if (!window.location.hash || window.location.hash.indexOf('access_token') === -1) return false;
+      const h = new URLSearchParams(window.location.hash.substring(1));
+      const access_token = h.get('access_token');
+      if (!access_token) return false;
+
+      AUTH.set({
+        access_token,
+        refresh_token: h.get('refresh_token'),
+        expires_in: parseInt(h.get('expires_in'), 10) || 3600
+      });
+
+      // Strip the tokens out of the address bar.
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+      return true;
+    }
+
+    // Asks the database whether the signed-in email is on the admin list.
+    async function checkIsAdmin() {
+      const token = await currentToken();
+      if (!token) return false;
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/is_admin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${token}`
+          },
+          body: '{}'
+        });
+        if (!res.ok) return false;
+        return (await res.json()) === true;
+      } catch (e) {
+        console.error('Admin check:', e);
+        return false;
+      }
+    }
+
     // Supabase helper
     async function supabaseQuery(table, method = 'GET', data = null, filter = '') {
       const url = `${SUPABASE_URL}/rest/v1/${table}${filter}`;
+      const token = await currentToken();
       const options = {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Authorization': `Bearer ${token || SUPABASE_KEY}`,
           'apikey': SUPABASE_KEY,
           'Prefer': 'return=representation'
         }
@@ -474,28 +591,42 @@
       return '$' + Number(n || 0).toFixed(2);
     }
 
-    // Check if admin is already logged in
-    if(sessionStorage.getItem('bm_admin_logged_in') === 'yes'){
-      showAdminDashboard();
-      loadAdminData();
-    }
+    // Runs on every page load: pick up a session, then decide whether
+    // this person sees the dashboard.
+    async function initAdmin() {
+      const arrived = captureSessionFromUrl();
+      if (!AUTH.get()) return;
 
-    function adminLogin() {
-      const password = document.getElementById('adminPassword').value;
-      if (password === 'admin123') {
-        sessionStorage.setItem('bm_admin_logged_in', 'yes');
-        document.getElementById('adminPassword').value = '';
+      const ok = await checkIsAdmin();
+      if (ok) {
         showAdminDashboard();
         loadAdminData();
-      } else {
-        alert(t('badPassword'));
+        return;
+      }
+
+      // Signed in, but not on the admin list.
+      AUTH.clear();
+      if (arrived) {
+        const status = document.getElementById('authStatus');
+        if (status) status.textContent = t('notAdmin');
       }
     }
 
-    function adminLogout() {
-      sessionStorage.removeItem('bm_admin_logged_in');
+    async function adminLogout() {
+      const token = await currentToken();
+      if (token) {
+        try {
+          await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${token}` }
+          });
+        } catch (e) { /* clearing locally is what matters */ }
+      }
+      AUTH.clear();
       document.getElementById('adminLoginScreen').style.display='block';
       document.getElementById('adminDashboard').style.display='none';
+      const status = document.getElementById('authStatus');
+      if (status) status.textContent = '';
       alert(t('loggedOut'));
     }
 
@@ -1505,6 +1636,7 @@
 
       applyLang();
       loadHeroStats();
+      initAdmin();
 
       ['designPrice', 'designShare'].forEach(id => {
         const el = document.getElementById(id);
