@@ -1,28 +1,31 @@
 <div class="wrap">
-  <h2>Merchant</h2>
-  <div class="panel">
-    <h3>Redeem Cards</h3>
-    <p>View and redeem cards that have been peeled by supporters.</p>
-    
-    <div id="merchantCardList" style="margin-top:20px;">
-      <!-- Redeemable cards will load here -->
+  <h2 data-i18n="tabMerchant">Merchant</h2>
+
+  <div id="merchantLocked" class="panel">
+    <h3 data-i18n="merchantAccess">Merchant Access</h3>
+    <p data-i18n="merchantAccessBody">Enter the code we gave your business.</p>
+
+    <label data-i18n="merchantCodeLabel">Merchant Code</label>
+    <input type="text" id="merchantCode" data-i18n-ph="merchantCodePh" placeholder="MERCH-XXXXXXXX">
+
+    <button class="btn" onclick="unlockMerchant()" style="margin-top:12px;" data-i18n="unlock">Unlock</button>
+  </div>
+
+  <div id="merchantUnlockedContent" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <h3 id="merchantNameDisplay" style="margin:0;">—</h3>
     </div>
-    
-    <div style="margin-top:30px;padding:15px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-      <p style="margin:0;font-size:12px;color:#aaa;">📊 Redemption Status:</p>
-      <p style="margin:8px 0 0 0;font-size:13px;">Only cards that have been peeled by supporters appear here. Click "Redeem" to mark them as claimed.</p>
+
+    <div id="merchantStats" style="margin-bottom:18px;"></div>
+
+    <div class="panel">
+      <h3 data-i18n="lookupTitle">Look up a card</h3>
+      <p style="font-size:12px;color:#888;" data-i18n="lookupBody">Type the code from the customer's card to redeem from this device.</p>
+
+      <input type="text" id="lookupCode" data-i18n-ph="lookupPh" placeholder="Card code" style="text-transform:uppercase;">
+      <button class="btn" onclick="merchantLookup()" style="margin-top:12px;" data-i18n="lookupBtn">Find card</button>
+
+      <div id="lookupResult" style="margin-top:16px;"></div>
     </div>
   </div>
 </div>
-
-<script>
-// Load cards when this component appears
-window.addEventListener('tabChanged', function(e) {
-  if (e.detail.tab === 'merchant') {
-    setTimeout(loadMerchantCards, 100);
-  }
-});
-
-// Also load on initial load
-setTimeout(loadMerchantCards, 500);
-</script>
