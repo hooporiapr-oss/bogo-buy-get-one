@@ -1,34 +1,32 @@
 <div class="wrap">
-  <h2>Coach Panel</h2>
-  
+  <h2 data-i18n="tabCoach">Coach</h2>
+
   <div id="coachLocked" class="panel">
-    <h3>Coach Access</h3>
-    <p>Enter your coach access code to unlock player management.</p>
-    
-    <label>Coach Access Code</label>
-    <input type="text" id="coachCode" placeholder="Enter your coach access code">
-    
-    <button class="btn" onclick="unlockCoach()">Unlock Coach Panel</button>
+    <h3 data-i18n="coachAccess">Coach Access</h3>
+    <p data-i18n="coachAccessBody">Enter your coach code to manage your roster.</p>
+
+    <label data-i18n="coachCode">Coach Code</label>
+    <input type="text" id="coachCode" data-i18n-ph="coachCodePh" placeholder="COACH-XXXXXXXX">
+
+    <button class="btn" onclick="unlockCoach()" style="margin-top:12px;" data-i18n="unlock">Unlock</button>
   </div>
-  
+
   <div id="coachUnlockedContent" style="display:none;">
+    <div class="panel" style="margin-bottom:16px;">
+      <h3 id="campaignNameDisplay" style="margin:0;">—</h3>
+    </div>
+
+    <div id="coachEarnings" style="margin-bottom:18px;"></div>
+
     <div class="panel">
-      <h3>Campaign: <span id="campaignNameDisplay">-</span></h3>
-      
-      <div style="margin-top:20px;">
-        <h4>Add Players</h4>
-        <label>Player Name</label>
-        <input type="text" id="playerName" placeholder="Enter player name">
-        
-        <button class="btn" onclick="addPlayer()" style="margin-top:12px;">Add Player</button>
-      </div>
-      
-      <div style="margin-top:30px;">
-        <h4>Players on Team</h4>
-        <div id="playersList" style="margin-top:12px;">No players yet</div>
-      </div>
-      
-      <button class="btn" onclick="createCards()" style="margin-top:20px;width:100%;">Create Cards for Players</button>
+      <h3 data-i18n="playersTitle">Roster</h3>
+
+      <label data-i18n="playerNameLabel">Player Name</label>
+      <input type="text" id="playerName" data-i18n-ph="playerNamePh" placeholder="Full name">
+
+      <button class="btn" onclick="addPlayer()" style="margin-top:12px;" data-i18n="addPlayerBtn">Add Player</button>
+
+      <div id="playersList" style="margin-top:18px;"></div>
     </div>
   </div>
 </div>
