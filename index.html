@@ -277,6 +277,8 @@
         unused:'Unused', redeemedStat:'Redeemed', yourCoupons:'Your Coupons',
         couponHelp:'Peel a tab at the register, then hand your phone to the cashier to redeem it.',
         saveCardLink:'Save My Card Link', cardWord:'Card', supporting:'supporting',
+        quantityPrompt:'How many cards? (each one is separate — keep one, give the rest away)',
+        cardsPlural:'cards', checkEmail:'links also sent to your email',
         paymentReceived:'Payment received', buildingCard:'Building your card...',
         cardSlow:'Your card is taking longer than usual to build. It will arrive shortly — refresh this page in a minute, or contact us with your receipt.'
       },
@@ -357,6 +359,8 @@
         unused:'Sin usar', redeemedStat:'Redimidos', yourCoupons:'Tus cupones',
         couponHelp:'Despega un cupón en el mostrador y entrégale el celular al cajero para redimirlo.',
         saveCardLink:'Guardar mi enlace', cardWord:'Tarjeta', supporting:'apoyando a',
+        quantityPrompt:'¿Cuántas tarjetas? (cada una es independiente — quédate con una y regala las demás)',
+        cardsPlural:'tarjetas', checkEmail:'los enlaces también van a tu correo',
         paymentReceived:'Pago recibido', buildingCard:'Creando tu tarjeta...',
         cardSlow:'Tu tarjeta está tardando más de lo normal. Llegará pronto — refresca esta página en un minuto o comunícate con nosotros con tu recibo.'
       }
@@ -1000,6 +1004,10 @@
       const buyerName = prompt(t('buyerPrompt'), '');
       if (buyerName === null) return;
 
+      const qtyRaw = prompt(t('quantityPrompt'), '1');
+      if (qtyRaw === null) return;
+      const quantity = Math.min(Math.max(parseInt(qtyRaw, 10) || 1, 1), 20);
+
       const base = window.location.origin + window.location.pathname;
 
       try {
@@ -1011,6 +1019,7 @@
             campaign_id: campaignId,
             player_id: playerId,
             buyer_name: buyerName || t('supporterWord'),
+            quantity: quantity,
             success_url: `${base}?player=${playerId}&purchase=success`,
             cancel_url: `${base}?player=${playerId}&purchase=cancelled`
           })
@@ -1187,8 +1196,25 @@
       for (let i = 0; i < tries; i++) {
         try {
           const cards = await supabaseQuery('cards', 'GET', null,
-            `?stripe_session_id=eq.${sessionId}&select=card_token`);
+            `?stripe_session_id=eq.${sessionId}&select=card_token&order=card_index.asc`);
           if (cards && cards.length > 0 && cards[0].card_token) {
+            // Several cards bought: list them all rather than opening one.
+            if (cards.length > 1) {
+              whenReady('supporterContent', (b) => {
+                b.innerHTML = `
+                  <div class="panel">
+                    <h3>${t('paymentReceived')}</h3>
+                    <p style="color:#aaa;">${cards.length} ${t('cardsPlural')} — ${t('checkEmail')}</p>
+                    <div style="margin-top:14px;">
+                      ${cards.map((c, i) => `
+                        <a href="?card=${c.card_token}" style="display:block;padding:12px;background:#0e0a11;border:1px solid #ffffff14;border-radius:9px;margin:8px 0;color:var(--gold);font-family:monospace;font-weight:950;text-decoration:none;">
+                          ${i + 1}. ${c.card_token}
+                        </a>`).join('')}
+                    </div>
+                  </div>`;
+              });
+              return;
+            }
             window.location.href = window.location.origin + window.location.pathname + '?card=' + cards[0].card_token;
             return;
           }
