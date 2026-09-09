@@ -301,6 +301,7 @@
         coachCleared:'Coach email removed', noCoachRecord:'No coach record for this campaign',
         coachSignIn:'Coach Sign In', coachSignInBody:'Enter the email your campaign was set up with.',
         pickCampaign:'Which team?',
+        notACoach:'That email is not set up as a coach. Ask your admin to add it.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -415,6 +416,7 @@
         coachCleared:'Correo del entrenador eliminado', noCoachRecord:'No hay entrenador para esta campa\u00f1a',
         coachSignIn:'Acceso de entrenador', coachSignInBody:'Entra el correo con el que se cre\u00f3 tu campa\u00f1a.',
         pickCampaign:'\u00bfCu\u00e1l equipo?',
+        notACoach:'Ese correo no est\u00e1 registrado como entrenador. Pide a tu administrador que lo a\u00f1ada.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1180,7 +1182,13 @@
           const coaches = await supabaseQuery('coaches', 'GET', null, '?select=id,campaign_id,name,email');
           const mine = (coaches || []).filter(c => c.email);
 
-          if (mine.length === 0) return;   // signed in, but not a coach
+          if (mine.length === 0) {
+            // Signed in fine, but this email coaches nothing. Say so,
+            // otherwise the form just sits there and looks broken.
+            const status = document.getElementById('coachAuthStatus');
+            if (status) status.textContent = t('notACoach');
+            return;
+          }
 
           if (mine.length === 1) {
             openCoachCampaign(mine[0]);
