@@ -108,6 +108,7 @@
         </div>
 
         <div id="adminDashboard" style="display:none;">
+          <p id="adminWhoami" style="margin:0 0 16px 0;font-size:12px;color:#888;"></p>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3 style="margin:0;" data-i18n="merchants">Merchants</h3>
@@ -331,6 +332,9 @@
         coachSignIn:'Coach Sign In', coachSignInBody:'Enter the email your campaign was set up with.',
         pickCampaign:'Which team?',
         notACoach:'That email is not set up as a coach. Ask your admin to add it.',
+        myCard:'My Card', sponsorSoon:'Coming soon',
+        sponsorSoonBody:"Business sponsorships aren't open yet. Get in touch if your company wants to sponsor a team.",
+        lockDevice:'Lock this device', signedInAs:'Signed in as',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -446,6 +450,9 @@
         coachSignIn:'Acceso de entrenador', coachSignInBody:'Entra el correo con el que se cre\u00f3 tu campa\u00f1a.',
         pickCampaign:'\u00bfCu\u00e1l equipo?',
         notACoach:'Ese correo no est\u00e1 registrado como entrenador. Pide a tu administrador que lo a\u00f1ada.',
+        myCard:'Mi tarjeta', sponsorSoon:'Pr\u00f3ximamente',
+        sponsorSoonBody:'Los auspicios para negocios todav\u00eda no est\u00e1n abiertos. Comun\u00edcate con nosotros si tu empresa quiere auspiciar un equipo.',
+        lockDevice:'Bloquear este equipo', signedInAs:'Conectado como',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -560,6 +567,25 @@
         AUTH.clear();
         return null;
       }
+    }
+
+    // The signed-in email, read straight from the token.
+    function signedInEmail() {
+      const sess = AUTH.get();
+      if (!sess || !sess.access_token) return null;
+      try {
+        const payload = JSON.parse(atob(sess.access_token.split('.')[1]));
+        return payload.email || null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function showSignedInAs(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      const email = signedInEmail();
+      el.textContent = email ? t('signedInAs') + ' ' + email : '';
     }
 
     async function sendMagicLink(emailFieldId, statusId, role) {
@@ -681,6 +707,7 @@
       if (ok) {
         showAdminDashboard();
         loadAdminData();
+        showSignedInAs('adminWhoami');
         return;
       }
 
@@ -1242,6 +1269,7 @@
     }
 
     function openCoachCampaign(coach) {
+      showSignedInAs('coachWhoami');
       sessionStorage.setItem('currentCampaignId', coach.campaign_id);
       sessionStorage.setItem('currentCoachId', coach.id);
       document.getElementById('coachLocked').style.display = 'none';
@@ -1507,6 +1535,16 @@
       } catch (error) {
         box.innerHTML = '<p style="color:#f66;">Error: ' + error.message + '</p>';
       }
+    }
+
+    function merchantLock() {
+      sessionStorage.removeItem('currentMerchantId');
+      const locked = document.getElementById('merchantLocked');
+      const open = document.getElementById('merchantUnlockedContent');
+      if (locked) locked.style.display = 'block';
+      if (open) open.style.display = 'none';
+      const field = document.getElementById('merchantCode');
+      if (field) field.value = '';
     }
 
     async function merchantRedeem(tabId) {
