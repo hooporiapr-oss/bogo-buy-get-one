@@ -84,32 +84,7 @@
 
   <header>
     <div class="wrap">
-      <div class="hero">
-        <div>
-          <div class="k" data-i18n="heroKicker">Basketball Money Platform</div>
-          <h1 data-i18n="heroTitle">Raise Funds. Engage Fans. Win Together.</h1>
-          <p data-i18n="heroBody">A complete digital fundraising system for basketball teams. Create campaigns, sell peelable digital cards, track engagement, and reach your goals.</p>
-
-          <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
-            <button class="btn alt" onclick="showTab('supporter')" data-i18n="supportTeam">Support a Team</button>
-          </div>
-
-          <div style="margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-              <p style="margin:0;font-size:12px;color:#aaa;" data-i18n="totalRaised">Total Raised</p>
-              <p id="statRaised" style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">—</p>
-            </div>
-            <div style="padding:14px;background:#ffffff08;border-radius:12px;border:1px solid #ffffff14;">
-              <p style="margin:0;font-size:12px;color:#aaa;" data-i18n="activeCampaigns">Active Campaigns</p>
-              <p id="statCampaigns" style="margin:6px 0 0 0;font-size:28px;font-weight:950;color:var(--gold);">—</p>
-            </div>
-          </div>
-        </div>
-
-        <div style="text-align:center;">
-          <img src="bball-money.jpg" alt="Basketball Money" style="width:100%;border-radius:20px;box-shadow:0 25px 60px #0008;">
-        </div>
-      </div>
+      <img src="bball-money.jpg" alt="Basketball Money" style="width:100%;max-height:280px;object-fit:cover;border-radius:20px;box-shadow:0 25px 60px #0008;display:block;">
     </div>
   </header>
 
@@ -122,10 +97,12 @@
           <h3 data-i18n="adminLogin">Admin Login</h3>
           <p data-i18n="adminLoginBody">Enter your email and we'll send you a sign-in link.</p>
 
-          <label data-i18n="emailLabel">Email</label>
-          <input type="email" id="adminEmail" data-i18n-ph="emailPh" placeholder="you@example.com" autocomplete="email">
+          <div id="adminSignInForm">
+            <label data-i18n="emailLabel">Email</label>
+            <input type="email" id="adminEmail" data-i18n-ph="emailPh" placeholder="you@example.com" autocomplete="email">
 
-          <button class="btn" onclick="sendMagicLink()" style="margin-top:12px;" data-i18n="sendLink">Send sign-in link</button>
+            <button class="btn" onclick="sendMagicLink('adminEmail','authStatus')" style="margin-top:12px;" data-i18n="sendLink">Send sign-in link</button>
+          </div>
 
           <p id="authStatus" style="margin:14px 0 0 0;font-size:13px;color:#aaa;"></p>
         </div>
@@ -343,7 +320,7 @@
         enterEmail:'Enter your email', sending:'Sending...',
         linkSent:'Check your email — the sign-in link is on its way. It expires in an hour.',
         linkFailed:'Could not send the link:',
-        notAdmin:'That email is not on the admin list.',
+        notAdmin:"You're signed in, but this email isn't an admin. Sign out first if you want to sign in as someone else.",
         coachAccess:'Coach Access', coachAccessBody:'Enter your coach code to manage your roster.',
         coachCodePh:'COACH-XXXXXXXX', playerNameLabel:'Player Name', playerNamePh:'Full name',
         addPlayerBtn:'Add Player', playersTitle:'Roster',
@@ -458,7 +435,7 @@
         enterEmail:'Entra tu correo', sending:'Enviando...',
         linkSent:'Revisa tu correo — el enlace de acceso va en camino. Expira en una hora.',
         linkFailed:'No se pudo enviar el enlace:',
-        notAdmin:'Ese correo no est\u00e1 en la lista de administradores.',
+        notAdmin:'Est\u00e1s conectado, pero este correo no es administrador. Cierra sesi\u00f3n si quieres entrar con otro.',
         coachAccess:'Acceso de entrenador', coachAccessBody:'Entra tu c\u00f3digo para manejar tu equipo.',
         coachCodePh:'COACH-XXXXXXXX', playerNameLabel:'Nombre del jugador', playerNamePh:'Nombre completo',
         addPlayerBtn:'A\u00f1adir jugador', playersTitle:'Equipo',
@@ -707,12 +684,16 @@
         return;
       }
 
-      // Signed in, but not on the admin list.
-      AUTH.clear();
-      if (arrived) {
-        const status = document.getElementById('authStatus');
-        if (status) status.textContent = t('notAdmin');
-      }
+      // Signed in, but not an admin. Do NOT clear the session — this
+      // person may be a perfectly valid coach, and clearing here would
+      // silently sign them out of their own account.
+      const status = document.getElementById('authStatus');
+      if (status) status.textContent = t('notAdmin');
+
+      // Hide the sign-in form: they are already signed in, so offering
+      // another login box makes no sense.
+      const form = document.getElementById('adminSignInForm');
+      if (form) form.style.display = 'none';
     }
 
     async function adminLogout() {
@@ -1965,6 +1946,7 @@
       const which = tab.getAttribute('data-tab');
       if (which === 'player') loadPlayerView();
       if (which === 'supporter') loadSupporterCard();
+      if (which === 'admin') initAdmin();
       if (which === 'coach' && !sessionStorage.getItem('currentCampaignId')) initCoach();
       if (which === 'merchant' && sessionStorage.getItem('currentMerchantId')) {
         whenReady('merchantUnlockedContent', (el) => {
@@ -1979,7 +1961,6 @@
       const params = new URLSearchParams(window.location.search);
 
       applyLang();
-      loadHeroStats();
       initAdmin();
       initCoach();
 
