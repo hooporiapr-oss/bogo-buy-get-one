@@ -340,6 +340,8 @@
         ourPlayers:'Our players', ourPlayersBody:'Tap a player to support them directly.',
         shareTeamLink:'Share this page', teamLink:'Team Link',
         teamPageSales:'Team page sales',
+        chooseCards:'Cards', chooseCardsBody:'Tick the cards this team can sell.',
+        noCardsForTeam:'No cards are set up for this team yet. Please check back soon.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -468,6 +470,8 @@
         ourPlayers:'Nuestros jugadores', ourPlayersBody:'Toca un jugador para apoyarlo directamente.',
         shareTeamLink:'Compartir esta p\u00e1gina', teamLink:'Enlace del equipo',
         teamPageSales:'Ventas de la p\u00e1gina del equipo',
+        chooseCards:'Tarjetas', chooseCardsBody:'Marca las tarjetas que este equipo puede vender.',
+        noCardsForTeam:'Todav\u00eda no hay tarjetas asignadas a este equipo. Vuelve pronto.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1095,9 +1099,11 @@
                 </div>
                 <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                   <button class="btn" onclick="copyTeamLink('${c.slug}')" style="padding:6px 10px;font-size:11px;">${t('teamLink')}</button>
+                  <button class="btn alt" onclick="toggleCampaignCards('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('chooseCards')}</button>
                   <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
                 </div>
               </div>
+              <div id="campaignCards-${c.id}" style="display:none;margin-top:12px;"></div>
             </div>
           `;
         }
@@ -1284,6 +1290,63 @@
         loadPayouts();
       } catch (error) {
         alert('Error: ' + error.message);
+      }
+    }
+
+    // ===== WHICH CARDS EACH CAMPAIGN SELLS =====
+
+    async function toggleCampaignCards(campaignId) {
+      const box = document.getElementById('campaignCards-' + campaignId);
+      if (!box) return;
+
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('loading')}</p>`;
+
+      try {
+        const designs = await supabaseQuery('card_designs', 'GET', null,
+          '?active=eq.true&order=created_at.desc');
+        const chosen = await supabaseQuery('campaign_cards', 'GET', null,
+          `?campaign_id=eq.${campaignId}&select=design_id`);
+        const picked = new Set((chosen || []).map(r => r.design_id));
+
+        if (!designs || designs.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('noDesigns')}</p>`;
+          return;
+        }
+
+        box.innerHTML = `
+          <p style="margin:0 0 8px 0;font-size:12px;color:#888;">${t('chooseCardsBody')}</p>
+          ${designs.map(d => `
+            <label style="display:flex;align-items:center;gap:10px;padding:10px;background:#1a1420;border-radius:8px;margin:5px 0;cursor:pointer;font-size:13px;">
+              <input type="checkbox" ${picked.has(d.id) ? 'checked' : ''}
+                onchange="setCampaignCard('${campaignId}','${d.id}',this.checked)"
+                style="width:18px;height:18px;flex-shrink:0;">
+              <span>
+                <strong>${d.display_name || d.name}</strong>
+                <span style="color:#888;"> · ${d.tab_count} ${t('tabsWord')} · ${money(d.price)}</span>
+              </span>
+            </label>`).join('')}`;
+      } catch (error) {
+        box.innerHTML = '<p style="color:#f66;font-size:12px;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function setCampaignCard(campaignId, designId, on) {
+      try {
+        if (on) {
+          await supabaseQuery('campaign_cards', 'POST', {
+            campaign_id: campaignId, design_id: designId
+          }, '?select=*');
+        } else {
+          await supabaseQuery('campaign_cards', 'DELETE', null,
+            `?campaign_id=eq.${campaignId}&design_id=eq.${designId}`);
+        }
+      } catch (error) {
+        console.error('Campaign cards:', error);
+        alert('Error: ' + error.message);
+        toggleCampaignCards(campaignId);
+        toggleCampaignCards(campaignId);
       }
     }
 
@@ -1478,6 +1541,20 @@
       }
     }
 
+    // Only the cards this campaign has been set up to sell. Nothing
+    // chosen means nothing to buy — deliberately, so a card can never
+    // appear on a team it was not agreed for.
+    async function cardsForCampaign(campaignId) {
+      const links = await supabaseQuery('campaign_cards', 'GET', null,
+        `?campaign_id=eq.${campaignId}&select=design_id`);
+      if (!links || links.length === 0) return [];
+
+      const ids = links.map(l => l.design_id).join(',');
+      const designs = await supabaseQuery('card_designs', 'GET', null,
+        `?id=in.(${ids})&active=eq.true&order=created_at.desc`);
+      return designs || [];
+    }
+
     // ===== TEAM PAGE (public, opened with ?team=slug) =====
 
     function getTeamSlugFromUrl() {
@@ -1519,11 +1596,10 @@
           const players = await supabaseQuery('players', 'GET', null,
             `?campaign_id=eq.${campaign.id}&order=created_at.asc`);
 
-          const designs = await supabaseQuery('card_designs', 'GET', null,
-            '?active=eq.true&order=created_at.desc');
+          const designs = await cardsForCampaign(campaign.id);
 
           const buyHtml = (designs || []).length === 0
-            ? `<p style="color:#aaa;">${t('noCardsAvailable')}</p>`
+            ? `<p style="color:#aaa;">${t('noCardsForTeam')}</p>`
             : designs.map(d => `
                 <div style="padding:14px;background:#0e0a11;border-radius:12px;margin:10px 0;border:1px solid #ffffff14;display:flex;justify-content:space-between;align-items:center;gap:12px;">
                   <div style="display:flex;align-items:center;gap:10px;">
@@ -1643,11 +1719,10 @@
           const sold = cards || [];
           const raised = sold.reduce((sum, c) => sum + Number(c.team_amount || 0), 0);
 
-          const designs = await supabaseQuery('card_designs', 'GET', null,
-            '?active=eq.true&order=created_at.desc');
+          const designs = await cardsForCampaign(player.campaign_id);
 
           const buyHtml = (designs || []).length === 0
-            ? '<p style="color:#aaa;">' + t('noCardsAvailable') + '</p>'
+            ? '<p style="color:#aaa;">' + t('noCardsForTeam') + '</p>'
             : designs.map(d => `
                 <div style="padding:14px;background:#0e0a11;border-radius:12px;margin:10px 0;border:1px solid #ffffff14;display:flex;justify-content:space-between;align-items:center;gap:12px;">
                   <div>
