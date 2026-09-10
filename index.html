@@ -174,7 +174,10 @@
             <p style="margin:6px 0 0 0;font-size:11px;color:#888;" id="splitPreview"></p>
 
             <label data-i18n="offerText">Offer Text</label>
-            <input type="text" id="designOffer" value="Buy One Get One Free">
+            <input type="text" id="designOffer" data-i18n-ph="offerTextPh" placeholder="e.g. Buy one large pizza, get one free" value="Buy One Get One Free">
+
+            <label data-i18n="validWhen">When it can be used (optional)</label>
+            <input type="text" id="designWhen" data-i18n-ph="validWhenPh" placeholder="e.g. Tuesdays only, or before 5pm">
 
             <label data-i18n="terms">Terms (optional)</label>
             <input type="text" id="designTerms" data-i18n-ph="termsPh" placeholder="One per visit. Not valid with other offers.">
@@ -243,8 +246,8 @@
     <div class="wrap" style="display:flex;flex-direction:column;align-items:center;gap:10px;font-size:12px;color:#888;">
       <span>Gostar Digital LLC</span>
       <span style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
-        <a href="https://cashflowhoops.app/terms.html" style="color:#888;" data-i18n="termsLink">Terms</a>
-        <a href="https://cashflowhoops.app/privacy.html" style="color:#888;" data-i18n="privacyLink">Privacy</a>
+        <a href="terms.html" style="color:#888;" data-i18n="termsLink">Terms</a>
+        <a href="privacy.html" style="color:#888;" data-i18n="privacyLink">Privacy</a>
         <a href="mailto:cashflowhoops@gmail.com" style="color:#888;">cashflowhoops@gmail.com</a>
       </span>
     </div>
@@ -366,6 +369,12 @@
         expiryTitle:'Card Expiry', liveCards:'still valid', expiringSoon:'expiring within 30 days',
         lastCardExpires:'Last card expires', noCardsYet:'No cards sold yet.',
         termsLink:'Terms', privacyLink:'Privacy', agreeNote:'By buying you agree to our Terms and Privacy Policy.',
+        sponsorIntro:'The local businesses backing our teams. Every card sold sends half the money straight to a team.',
+        noSponsorsYet:'No participating businesses yet.',
+        wantThisCard:'Want one of these for your team?',
+        wantThisCardBody:'Teams can ask for a specific card. Tell us which business your supporters would use and we will see what we can do.',
+        validWhen:'When it can be used (optional)', validWhenPh:'e.g. Tuesdays only, or before 5pm',
+        offerTextPh:'e.g. Buy one large pizza, get one free',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -501,6 +510,12 @@
         expiryTitle:'Vencimiento de Tarjetas', liveCards:'a\u00fan v\u00e1lidas', expiringSoon:'vencen en 30 d\u00edas',
         lastCardExpires:'La \u00faltima vence el', noCardsYet:'Todav\u00eda no se han vendido tarjetas.',
         termsLink:'T\u00e9rminos', privacyLink:'Privacidad', agreeNote:'Al comprar aceptas nuestros T\u00e9rminos y Pol\u00edtica de Privacidad.',
+        sponsorIntro:'Los negocios locales que apoyan a nuestros equipos. La mitad de cada tarjeta vendida va directo al equipo.',
+        noSponsorsYet:'Todav\u00eda no hay negocios participantes.',
+        wantThisCard:'\u00bfQuieres una de estas para tu equipo?',
+        wantThisCardBody:'Los equipos pueden pedir una tarjeta espec\u00edfica. Dinos qu\u00e9 negocio usar\u00edan tus seguidores y vemos qu\u00e9 podemos hacer.',
+        validWhen:'Cu\u00e1ndo se puede usar (opcional)', validWhenPh:'ej. Solo martes, o antes de las 5pm',
+        offerTextPh:'ej. Compra una pizza grande y ll\u00e9vate otra gratis',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -565,6 +580,7 @@
       if (document.getElementById('playerContent')) loadPlayerView();
       if (document.getElementById('supporterContent') && getCardTokenFromUrl()) loadSupporterCard();
       if (document.getElementById('playersList')) loadCoachDashboard();
+      if (document.getElementById('sponsorContent')) loadSponsors();
     }
 
     // Supabase config
@@ -1026,12 +1042,14 @@
           price,
           team_share_pct: share,
           offer_text: document.getElementById('designOffer').value.trim() || 'Buy One Get One Free',
+          valid_when: document.getElementById('designWhen').value.trim() || null,
           terms: document.getElementById('designTerms').value.trim() || null,
           expires_on: document.getElementById('designExpires').value || null
         }, '?select=*');
 
         document.getElementById('designName').value = '';
         document.getElementById('designTerms').value = '';
+        document.getElementById('designWhen').value = '';
         document.getElementById('createDesignForm').style.display = 'none';
 
         loadDesigns();
@@ -1060,7 +1078,7 @@
               <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
                 <div style="flex:1;">
                   <p style="margin:0;font-weight:950;font-size:16px;">${d.name}</p>
-                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.merchants ? d.merchants.name : t('merchantWord')} · ${d.tab_count} ${t('tabsWord')} · ${d.offer_text}</p>
+                  <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.merchants ? d.merchants.name : t('merchantWord')} · ${d.tab_count} ${t('tabsWord')} · ${d.offer_text}${d.valid_when ? ' · ' + d.valid_when : ''}</p>
                   <p style="margin:6px 0 0 0;font-size:13px;">
                     <span style="color:var(--gold);font-weight:950;">${money(d.price)}</span>
                     <span style="color:#888;"> — ${t('teamWord')} ${money(team)} / ${t('platformWord')} ${money(Number(d.price) - team)}</span>
@@ -1646,6 +1664,62 @@
       return designs || [];
     }
 
+    // ===== SPONSOR WALL (public) =====
+    // Reads the brand fields copied onto card designs, so it works
+    // without exposing the merchants table.
+
+    async function loadSponsors() {
+      whenReady('sponsorContent', async (box) => {
+        try {
+          const designs = await supabaseQuery('card_designs', 'GET', null,
+            '?active=eq.true&order=created_at.desc');
+          const list = designs || [];
+
+          if (list.length === 0) {
+            box.innerHTML = `<div class="panel"><p style="color:#aaa;">${t('noSponsorsYet')}</p></div>`;
+            return;
+          }
+
+          // one tile per business, collecting their offers
+          const brands = {};
+          list.forEach(d => {
+            const name = d.display_name || d.name;
+            if (!brands[name]) brands[name] = { logo: d.display_logo || null, offers: [] };
+            if (!brands[name].logo && d.display_logo) brands[name].logo = d.display_logo;
+            const label = d.offer_text + (d.valid_when ? ' (' + d.valid_when + ')' : '');
+            if (d.offer_text && brands[name].offers.indexOf(label) === -1) {
+              brands[name].offers.push(label);
+            }
+          });
+
+          const names = Object.keys(brands).sort((a, b) => a.localeCompare(b));
+
+          box.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;">
+              ${names.map(name => {
+                const b = brands[name];
+                return `
+                  <div style="padding:18px 14px;background:#0e0a11;border:1px solid #ffffff14;border-radius:14px;text-align:center;">
+                    ${b.logo
+                      ? `<img src="${b.logo}" alt="${name}" style="width:72px;height:72px;border-radius:12px;object-fit:cover;margin-bottom:10px;">`
+                      : `<div style="width:72px;height:72px;border-radius:12px;margin:0 auto 10px;background:#1a1420;display:grid;place-content:center;font-weight:950;font-size:22px;color:var(--gold);">${name.trim().charAt(0).toUpperCase()}</div>`}
+                    <p style="margin:0;font-weight:950;font-size:14px;">${name}</p>
+                    ${b.offers.length ? `<p style="margin:5px 0 0 0;font-size:11px;color:#888;line-height:1.35;">${b.offers.join(' · ')}</p>` : ''}
+                  </div>`;
+              }).join('')}
+            </div>
+
+            <div class="panel" style="margin-top:20px;">
+              <h3>${t('wantThisCard')}</h3>
+              <p style="color:#aaa;font-size:13px;margin:6px 0 0;">${t('wantThisCardBody')}</p>
+            </div>`;
+        } catch (error) {
+          console.error('Sponsor wall:', error);
+          box.innerHTML = '<div class="panel"><p style="color:#f66;">Error: ' + error.message + '</p></div>';
+        }
+      });
+    }
+
     // ===== TEAM PAGE (public, opened with ?team=slug) =====
 
     function getTeamSlugFromUrl() {
@@ -1698,6 +1772,8 @@
                     <div>
                       <p style="margin:0;font-weight:950;">${d.display_name || d.name}</p>
                       <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${d.tab_count} ${t('couponTabs')} · ${d.offer_text}</p>
+                    ${d.valid_when ? `<p style="margin:3px 0 0 0;font-size:11px;color:var(--gold);">${d.valid_when}</p>` : ''}
+                      ${d.valid_when ? `<p style="margin:3px 0 0 0;font-size:11px;color:var(--gold);">${d.valid_when}</p>` : ''}
                       <p style="margin:4px 0 0 0;font-size:12px;color:var(--gold);font-weight:950;">${money(d.price)}</p>
                     </div>
                   </div>
@@ -1941,7 +2017,7 @@
 
         try {
           const cards = await supabaseQuery('cards', 'GET', null,
-            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,terms,expires_on,display_name,display_logo),players(name),campaigns(name)`);
+            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,valid_when,terms,expires_on,display_name,display_logo),players(name),campaigns(name)`);
 
           if (!cards || cards.length === 0) {
             box.innerHTML = `<div class="panel"><h3>${t('cardNotFound')}</h3><p style="color:#aaa;">${t('cardNotFoundBody')}</p></div>`;
@@ -2002,6 +2078,7 @@
                 <div>
                   <h3 style="margin:0;">${merchant.name || design.name || 'Your Card'}</h3>
                   <p style="margin:4px 0 0 0;color:var(--gold);font-weight:950;">${design.offer_text || 'Buy One Get One Free'}</p>
+                  ${design.valid_when ? `<p style="margin:4px 0 0 0;font-size:12px;color:#E8B23A;">${design.valid_when}</p>` : ''}
                 </div>
               </div>
               <p style="margin:12px 0 0 0;font-size:12px;color:#aaa;">
@@ -2204,6 +2281,7 @@
       const which = tab.getAttribute('data-tab');
       if (which === 'player') loadPlayerView();
       if (which === 'supporter') loadSupporterCard();
+      if (which === 'sponsor') loadSponsors();
       if (which === 'admin') initAdmin();
       if (which === 'coach' && !sessionStorage.getItem('currentCampaignId')) initCoach();
     });
