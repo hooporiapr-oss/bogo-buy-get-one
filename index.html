@@ -342,6 +342,7 @@
         teamPageSales:'Team page sales',
         chooseCards:'Cards', chooseCardsBody:'Tick the cards this team can sell.',
         noCardsForTeam:'No cards are set up for this team yet. Please check back soon.',
+        noSalesYet:'No sales yet. Campaigns appear here once cards start selling.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -472,6 +473,7 @@
         teamPageSales:'Ventas de la p\u00e1gina del equipo',
         chooseCards:'Tarjetas', chooseCardsBody:'Marca las tarjetas que este equipo puede vender.',
         noCardsForTeam:'Todav\u00eda no hay tarjetas asignadas a este equipo. Vuelve pronto.',
+        noSalesYet:'Todav\u00eda no hay ventas. Las campa\u00f1as aparecen aqu\u00ed cuando se vendan tarjetas.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1176,7 +1178,11 @@
 
         let totalOwed = 0, totalPaid = 0, totalPlatform = 0;
 
-        const rows = campaigns.map(c => {
+        // Only campaigns with money moving through them. A campaign
+        // that has sold nothing is not a payout waiting to happen.
+        const active = campaigns.filter(c => (owedBy[c.id] || 0) > 0 || (paidBy[c.id] || 0) > 0);
+
+        const rows = active.map(c => {
           const owed = owedBy[c.id] || 0;
           const already = paidBy[c.id] || 0;
           const outstanding = owed - already;
@@ -1203,6 +1209,11 @@
               <div id="payoutHistory-${c.id}" style="display:none;margin-top:10px;"></div>
             </div>`;
         }).join('');
+
+        if (active.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;">${t('noSalesYet')}</p>`;
+          return;
+        }
 
         box.innerHTML = `
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px;">
