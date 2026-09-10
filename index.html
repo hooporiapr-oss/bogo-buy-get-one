@@ -239,6 +239,17 @@
     <section id="view-coach" class="view"></section>
   </main>
 
+  <footer style="border-top:1px solid #ffffff14;margin-top:46px;padding:24px 0 40px;text-align:center;">
+    <div class="wrap" style="display:flex;flex-direction:column;align-items:center;gap:10px;font-size:12px;color:#888;">
+      <span>Gostar Digital LLC</span>
+      <span style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;">
+        <a href="https://cashflowhoops.app/terms.html" style="color:#888;" data-i18n="termsLink">Terms</a>
+        <a href="https://cashflowhoops.app/privacy.html" style="color:#888;" data-i18n="privacyLink">Privacy</a>
+        <a href="mailto:cashflowhoops@gmail.com" style="color:#888;">cashflowhoops@gmail.com</a>
+      </span>
+    </div>
+  </footer>
+
   <script>
     // ===== LANGUAGE =====
 
@@ -354,6 +365,7 @@
         expiredWord:'Expired', validThrough:'Valid through', cardExpired:'This card expired on',
         expiryTitle:'Card Expiry', liveCards:'still valid', expiringSoon:'expiring within 30 days',
         lastCardExpires:'Last card expires', noCardsYet:'No cards sold yet.',
+        termsLink:'Terms', privacyLink:'Privacy', agreeNote:'By buying you agree to our Terms and Privacy Policy.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -488,6 +500,7 @@
         expiredWord:'Vencido', validThrough:'V\u00e1lida hasta', cardExpired:'Esta tarjeta venci\u00f3 el',
         expiryTitle:'Vencimiento de Tarjetas', liveCards:'a\u00fan v\u00e1lidas', expiringSoon:'vencen en 30 d\u00edas',
         lastCardExpires:'La \u00faltima vence el', noCardsYet:'Todav\u00eda no se han vendido tarjetas.',
+        termsLink:'T\u00e9rminos', privacyLink:'Privacidad', agreeNote:'Al comprar aceptas nuestros T\u00e9rminos y Pol\u00edtica de Privacidad.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1721,7 +1734,7 @@
             <div class="panel" style="margin-bottom:16px;">
               <h3>${t('supportThisTeam')}</h3>
               <p style="margin:6px 0 12px 0;font-size:12px;color:#888;">${t('supportTeamBody')}</p>
-              ${buyHtml}
+              ${buyHtml}              <p style="margin:12px 0 0 0;font-size:11px;color:#777;">${t('agreeNote')}</p>
             </div>
 
             <div class="panel">
@@ -1840,6 +1853,7 @@
             <div class="panel" style="margin-bottom:16px;">
               <h3>${t('support')} ${player.name}</h3>
               <div style="margin-top:12px;">${buyHtml}</div>
+              <p style="margin:12px 0 0 0;font-size:11px;color:#777;">${t('agreeNote')}</p>
             </div>
 
             <div class="panel">
