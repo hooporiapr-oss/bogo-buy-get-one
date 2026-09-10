@@ -136,6 +136,14 @@
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="margin:0;" data-i18n="expiryTitle">Card Expiry</h3>
+          </div>
+
+          <div class="panel" style="margin-bottom:26px;">
+            <div id="expiryContainer">—</div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3 style="margin:0;" data-i18n="bogoCards">BOGO Cards</h3>
             <button class="btn" onclick="toggleForm('createDesignForm')" data-i18n="newCard">+ New Card</button>
           </div>
@@ -344,6 +352,8 @@
         noCardsForTeam:'No cards are set up for this team yet. Please check back soon.',
         noSalesYet:'No sales yet. Campaigns appear here once cards start selling.',
         expiredWord:'Expired', validThrough:'Valid through', cardExpired:'This card expired on',
+        expiryTitle:'Card Expiry', liveCards:'still valid', expiringSoon:'expiring within 30 days',
+        lastCardExpires:'Last card expires', noCardsYet:'No cards sold yet.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -476,6 +486,8 @@
         noCardsForTeam:'Todav\u00eda no hay tarjetas asignadas a este equipo. Vuelve pronto.',
         noSalesYet:'Todav\u00eda no hay ventas. Las campa\u00f1as aparecen aqu\u00ed cuando se vendan tarjetas.',
         expiredWord:'Vencido', validThrough:'V\u00e1lida hasta', cardExpired:'Esta tarjeta venci\u00f3 el',
+        expiryTitle:'Vencimiento de Tarjetas', liveCards:'a\u00fan v\u00e1lidas', expiringSoon:'vencen en 30 d\u00edas',
+        lastCardExpires:'La \u00faltima vence el', noCardsYet:'Todav\u00eda no se han vendido tarjetas.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -788,6 +800,7 @@
 
     function loadAdminData() {
       loadMerchants();
+      loadExpiry();
       loadDesigns();
       loadPayouts();
       loadCampaigns();
@@ -911,6 +924,58 @@
         loadMerchants();
       } catch (error) {
         alert(t('merchantHasCards'));
+      }
+    }
+
+    // ===== CARD EXPIRY =====
+    // What is still live, and when a merchant's exposure actually ends.
+
+    async function loadExpiry() {
+      const box = document.getElementById('expiryContainer');
+      if (!box) return;
+
+      try {
+        const cards = await supabaseQuery('cards', 'GET', null,
+          '?select=expires_on,card_designs(display_name,name)');
+        const list = cards || [];
+
+        if (list.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;">${t('noCardsYet')}</p>`;
+          return;
+        }
+
+        const today = new Date().toISOString().slice(0, 10);
+        const in30 = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+
+        const byBrand = {};
+        list.forEach(c => {
+          const d = c.card_designs || {};
+          const brand = d.display_name || d.name || t('merchantWord');
+          if (!byBrand[brand]) byBrand[brand] = { live: 0, soon: 0, expired: 0, last: null };
+          const g = byBrand[brand];
+
+          if (!c.expires_on) { g.live++; return; }
+          if (c.expires_on < today) { g.expired++; return; }
+
+          g.live++;
+          if (c.expires_on <= in30) g.soon++;
+          if (!g.last || c.expires_on > g.last) g.last = c.expires_on;
+        });
+
+        box.innerHTML = Object.keys(byBrand).sort().map(name => {
+          const g = byBrand[name];
+          return `
+            <div style="padding:12px;background:#0e0a11;border-radius:9px;margin:8px 0;border:1px solid #ffffff14;">
+              <p style="margin:0;font-weight:950;">${name}</p>
+              <p style="margin:6px 0 0 0;font-size:12px;color:#aaa;">
+                <strong style="color:var(--gold);">${g.live}</strong> ${t('liveCards')}${g.soon > 0 ? ` · <strong>${g.soon}</strong> ${t('expiringSoon')}` : ''}${g.expired > 0 ? ` · ${g.expired} ${t('expiredWord').toLowerCase()}` : ''}
+              </p>
+              ${g.last ? `<p style="margin:5px 0 0 0;font-size:12px;color:#888;">${t('lastCardExpires')} ${g.last}</p>` : ''}
+            </div>`;
+        }).join('');
+      } catch (error) {
+        console.error('Expiry view:', error);
+        box.innerHTML = '<p style="color:#f66;">Error: ' + error.message + '</p>';
       }
     }
 
