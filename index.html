@@ -191,6 +191,7 @@
 
             <label data-i18n="offerText">Offer Text</label>
             <input type="text" id="designOffer" data-i18n-ph="offerTextPh" placeholder="e.g. Buy one large pizza, get one free" value="Buy One Get One Free">
+            <p style="margin:6px 0 0 0;font-size:11px;color:#888;" data-i18n="offerTextHint">Write it the way a cashier will read it. Name the item and the size.</p>
 
             <label data-i18n="validWhen">When it can be used (optional)</label>
             <input type="text" id="designWhen" data-i18n-ph="validWhenPh" placeholder="e.g. Tuesdays only, or before 5pm">
@@ -405,6 +406,8 @@
         confirmDeleteLocation:'Delete this location?',
         locationInUse:'Could not delete — coupons have been redeemed there.',
         whereRedeemed:'Which location?',
+        locationTownPh:'Town', storeNumberPh:'Store # (optional)', enterTown:'Enter the town',
+        offerTextHint:'Write it the way a cashier will read it. Name the item and the size.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -557,6 +560,8 @@
         confirmDeleteLocation:'\u00bfEliminar este local?',
         locationInUse:'No se pudo eliminar — ya se redimieron cupones ah\u00ed.',
         whereRedeemed:'\u00bfCu\u00e1l local?',
+        locationTownPh:'Pueblo', storeNumberPh:'Local # (opcional)', enterTown:'Entra el pueblo',
+        offerTextHint:'Escr\u00edbelo como lo leer\u00e1 el cajero. Nombra el art\u00edculo y el tama\u00f1o.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1046,8 +1051,8 @@
         const list = (rows || []).map(r => `
           <div style="padding:9px 10px;background:#1a1420;border-radius:8px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;">
             <span>
-              <strong>${r.name}</strong>
-              ${r.town ? `<span style="color:#888;"> · ${r.town}</span>` : ''}
+              <strong>${r.town || r.name}</strong>
+              ${r.store_number ? `<span style="color:var(--gold);"> #${r.store_number}</span>` : ''}
               ${r.active === false ? `<span style="color:#f66;"> · ${t('inactive')}</span>` : ''}
             </span>
             <span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
@@ -1060,8 +1065,8 @@
           <p style="margin:0 0 8px 0;font-size:11px;color:#888;">${t('locationsBody')}</p>
           ${list || `<p style="color:#aaa;font-size:12px;">${t('noLocations')}</p>`}
           <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
-            <input type="text" id="locName-${merchantId}" placeholder="${t('locationNamePh')}" style="flex:1;min-width:130px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;font-family:inherit;font-size:12px;">
-            <input type="text" id="locTown-${merchantId}" placeholder="${t('locationTownPh')}" style="flex:1;min-width:110px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;font-family:inherit;font-size:12px;">
+            <input type="text" id="locTown-${merchantId}" placeholder="${t('locationTownPh')}" style="flex:1;min-width:130px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;font-family:inherit;font-size:12px;">
+            <input type="text" id="locNum-${merchantId}" placeholder="${t('storeNumberPh')}" style="width:110px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;font-family:inherit;font-size:12px;">
             <button class="btn" onclick="addLocation('${merchantId}')" style="padding:8px 14px;font-size:11px;">${t('addLocation')}</button>
           </div>`;
       } catch (error) {
@@ -1070,15 +1075,18 @@
     }
 
     async function addLocation(merchantId) {
-      const name = (document.getElementById('locName-' + merchantId).value || '').trim();
       const town = (document.getElementById('locTown-' + merchantId).value || '').trim();
-      if (!name) { alert(t('enterLocationName')); return; }
+      const num = (document.getElementById('locNum-' + merchantId).value || '').trim();
+      if (!town) { alert(t('enterTown')); return; }
 
       try {
         await supabaseQuery('merchant_locations', 'POST', {
           merchant_id: merchantId,
-          name,
-          town: town || null
+          // name is what a cashier sees in the picker, built the same
+          // way every time so the list stays scannable under pressure.
+          name: num ? `${town} #${num}` : town,
+          town,
+          store_number: num || null
         }, '?select=*');
         loadLocations(merchantId);
       } catch (error) {
@@ -2368,7 +2376,7 @@
         locationId = CARD_LOCATIONS[0].id;
       } else if (CARD_LOCATIONS.length > 1) {
         const menu = CARD_LOCATIONS
-          .map((l, i) => `${i + 1}. ${l.name}${l.town ? ' (' + l.town + ')' : ''}`)
+          .map((l, i) => `${i + 1}. ${l.name}`)
           .join('\n');
         const pick = prompt(t('whereRedeemed') + '\n\n' + menu, '');
         if (pick === null) return;
