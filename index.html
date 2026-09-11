@@ -2580,42 +2580,76 @@
       }
     }
 
-    async function redeemTab(tabId) {
-      let locationId = null;
+    // A real picker, not a typed prompt. At a counter the cashier taps
+    // their store and their initials — typing a location name into a
+    // prompt was silently recording nothing when it did not match.
+    function redeemTab(tabId) {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:20px;';
 
-      // Only ask when there is a real choice to make — a merchant with
-      // one store should not slow the counter down with a question
-      // that has one answer.
-      if (CARD_LOCATIONS.length === 1) {
-        locationId = CARD_LOCATIONS[0].id;
-      } else if (CARD_LOCATIONS.length > 1) {
-        const menu = CARD_LOCATIONS
-          .map((l, i) => `${i + 1}. ${l.name}`)
-          .join('\n');
-        const pick = prompt(t('whereRedeemed') + '\n\n' + menu, '');
-        if (pick === null) return;
-        const n = parseInt(pick, 10);
-        if (n >= 1 && n <= CARD_LOCATIONS.length) {
-          locationId = CARD_LOCATIONS[n - 1].id;
-        }
-      }
+      const locButtons = CARD_LOCATIONS.length > 1
+        ? CARD_LOCATIONS.map(l => `
+            <button class="btn alt" data-loc="${l.id}" style="display:block;width:100%;margin:6px 0;text-align:left;">${l.name}</button>`).join('')
+        : '';
 
-      const staff = prompt(t('staffPrompt'), '');
-      if (staff === null) return;
+      overlay.innerHTML = `
+        <div style="background:#150f1b;border:1px solid #ffffff1f;border-radius:16px;padding:22px;max-width:380px;width:100%;max-height:88vh;overflow-y:auto;">
+          ${CARD_LOCATIONS.length > 1 ? `
+            <p style="margin:0 0 4px 0;font-size:12px;color:#aaa;">${t('whereRedeemed')}</p>
+            <div id="locPick" style="margin-bottom:18px;">${locButtons}</div>` : ''}
 
-      try {
-        await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
-          status: 'redeemed',
-          redeemed_at: new Date().toISOString(),
-          redeemed_by: staff || 'Staff',
-          redeemed_location: locationId
+          <label style="font-size:12px;color:#aaa;">${t('staffPrompt')}</label>
+          <input type="text" id="staffName" autocomplete="off" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;">
+
+          <div style="display:flex;gap:8px;margin-top:18px;">
+            <button class="btn" id="doRedeem" style="flex:1;">${t('redeem')}</button>
+            <button class="btn alt" id="cancelRedeem">${t('cancel')}</button>
+          </div>
+        </div>`;
+
+      document.body.appendChild(overlay);
+
+      // With several stores one must be chosen; with one it is implied.
+      let chosen = CARD_LOCATIONS.length === 1 ? CARD_LOCATIONS[0].id : null;
+
+      overlay.querySelectorAll('[data-loc]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          chosen = btn.getAttribute('data-loc');
+          overlay.querySelectorAll('[data-loc]').forEach(b => {
+            b.style.borderColor = '';
+            b.style.background = '';
+          });
+          btn.style.borderColor = 'var(--gold)';
+          btn.style.background = '#2a1f10';
         });
-        loadSupporterCard();
-        alert(t('redeemed'));
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error: ' + error.message);
-      }
+      });
+
+      const close = () => overlay.remove();
+      overlay.querySelector('#cancelRedeem').addEventListener('click', close);
+      overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+      overlay.querySelector('#doRedeem').addEventListener('click', async () => {
+        if (CARD_LOCATIONS.length > 1 && !chosen) { alert(t('whereRedeemed')); return; }
+        const staff = (overlay.querySelector('#staffName').value || '').trim();
+
+        try {
+          await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
+            status: 'redeemed',
+            redeemed_at: new Date().toISOString(),
+            redeemed_by: staff || 'Staff',
+            redeemed_location: chosen
+          });
+          close();
+          loadSupporterCard();
+          alert(t('redeemed'));
+        } catch (error) {
+          console.error('Error:', error);
+          alert('Error: ' + error.message);
+        }
+      });
+
+      const nameField = overlay.querySelector('#staffName');
+      if (CARD_LOCATIONS.length <= 1) nameField.focus();
     }
 
     function saveCardLink() {
