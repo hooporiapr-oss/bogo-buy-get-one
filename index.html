@@ -409,6 +409,10 @@
         locationTownPh:'Town', storeNumberPh:'Store # (optional)', enterTown:'Enter the town',
         offerTextHint:'Write it the way a cashier will read it. Name the item and the size.',
         edit:'Edit', saved:'Saved',
+        pickCardsFirst:'Tick the cards this team sells first, then choose locations.',
+        allLocationsNote:'All locations honor these coupons. Tick specific stores only to narrow it.',
+        someLocationsNote:'Only the ticked stores honor these coupons.',
+        backToAll:'Back to all locations', whereValid:'Where these coupons work',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -564,6 +568,10 @@
         locationTownPh:'Pueblo', storeNumberPh:'Local # (opcional)', enterTown:'Entra el pueblo',
         offerTextHint:'Escr\u00edbelo como lo leer\u00e1 el cajero. Nombra el art\u00edculo y el tama\u00f1o.',
         edit:'Editar', saved:'Guardado',
+        pickCardsFirst:'Marca primero las tarjetas que vende este equipo, luego escoge los locales.',
+        allLocationsNote:'Todos los locales honran estos cupones. Marca locales espec\u00edficos solo para limitarlo.',
+        someLocationsNote:'Solo los locales marcados honran estos cupones.',
+        backToAll:'Volver a todos los locales', whereValid:'D\u00f3nde funcionan estos cupones',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1019,6 +1027,110 @@
       }
     }
 
+    // ===== WHICH LOCATIONS HONOR A CAMPAIGN'S CARDS =====
+    // Locations are entered once per merchant and reused across every
+    // campaign. Nothing ticked here means all of them honor it, which
+    // is the normal case — ticking is how you narrow it when a
+    // franchise owner limits the deal to their own stores.
+
+    async function toggleCampaignLocations(campaignId) {
+      const box = document.getElementById('campaignLocs-' + campaignId);
+      if (!box) return;
+
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      loadCampaignLocations(campaignId);
+    }
+
+    async function loadCampaignLocations(campaignId) {
+      const box = document.getElementById('campaignLocs-' + campaignId);
+      if (!box) return;
+      box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('loading')}</p>`;
+
+      try {
+        // Only the merchants this campaign actually sells cards for —
+        // listing every location on the platform would be noise.
+        const links = await supabaseQuery('campaign_cards', 'GET', null,
+          `?campaign_id=eq.${campaignId}&select=design_id`);
+
+        if (!links || links.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('pickCardsFirst')}</p>`;
+          return;
+        }
+
+        const designIds = links.map(l => l.design_id).join(',');
+        const designs = await supabaseQuery('card_designs', 'GET', null,
+          `?id=in.(${designIds})&select=merchant_id,display_name,name`);
+
+        const merchantIds = [...new Set((designs || []).map(d => d.merchant_id).filter(Boolean))];
+        if (merchantIds.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('noLocations')}</p>`;
+          return;
+        }
+
+        const locs = await supabaseQuery('merchant_locations', 'GET', null,
+          `?merchant_id=in.(${merchantIds.join(',')})&active=eq.true&order=name.asc`);
+
+        if (!locs || locs.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('noLocations')}</p>`;
+          return;
+        }
+
+        const chosen = await supabaseQuery('campaign_locations', 'GET', null,
+          `?campaign_id=eq.${campaignId}&select=location_id`);
+        const picked = new Set((chosen || []).map(r => r.location_id));
+
+        const brandFor = {};
+        (designs || []).forEach(d => { brandFor[d.merchant_id] = d.display_name || d.name; });
+
+        box.innerHTML = `
+          <p style="margin:0 0 8px 0;font-size:12px;color:#888;">
+            ${picked.size === 0 ? t('allLocationsNote') : t('someLocationsNote')}
+          </p>
+          ${locs.map(l => `
+            <label style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:#1a1420;border-radius:8px;margin:5px 0;cursor:pointer;font-size:13px;">
+              <input type="checkbox" ${picked.has(l.id) ? 'checked' : ''}
+                onchange="setCampaignLocation('${campaignId}','${l.id}',this.checked)"
+                style="width:18px;height:18px;flex-shrink:0;">
+              <span>
+                <strong>${l.name}</strong>
+                <span style="color:#888;"> · ${brandFor[l.merchant_id] || ''}</span>
+              </span>
+            </label>`).join('')}
+          ${picked.size > 0 ? `<button class="btn alt" onclick="clearCampaignLocations('${campaignId}')" style="margin-top:10px;padding:6px 12px;font-size:11px;">${t('backToAll')}</button>` : ''}`;
+      } catch (error) {
+        console.error('Campaign locations:', error);
+        box.innerHTML = '<p style="color:#f66;font-size:12px;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function setCampaignLocation(campaignId, locationId, on) {
+      try {
+        if (on) {
+          await supabaseQuery('campaign_locations', 'POST', {
+            campaign_id: campaignId, location_id: locationId
+          }, '?select=*');
+        } else {
+          await supabaseQuery('campaign_locations', 'DELETE', null,
+            `?campaign_id=eq.${campaignId}&location_id=eq.${locationId}`);
+        }
+        loadCampaignLocations(campaignId);
+      } catch (error) {
+        console.error('Campaign location:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function clearCampaignLocations(campaignId) {
+      try {
+        await supabaseQuery('campaign_locations', 'DELETE', null,
+          `?campaign_id=eq.${campaignId}`);
+        loadCampaignLocations(campaignId);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
     // ===== EDITING MERCHANTS AND CAMPAIGNS =====
 
     async function editMerchant(id) {
@@ -1436,10 +1548,12 @@
                   <button class="btn" onclick="copyTeamLink('${c.slug}')" style="padding:6px 10px;font-size:11px;">${t('teamLink')}</button>
                   <button class="btn alt" onclick="editCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('edit')}</button>
                   <button class="btn alt" onclick="toggleCampaignCards('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('chooseCards')}</button>
+                  <button class="btn alt" onclick="toggleCampaignLocations('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('locations')}</button>
                   <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
                 </div>
               </div>
               <div id="campaignCards-${c.id}" style="display:none;margin-top:12px;"></div>
+              <div id="campaignLocs-${c.id}" style="display:none;margin-top:12px;"></div>
             </div>
           `;
         }
@@ -2268,7 +2382,7 @@
 
         try {
           const cards = await supabaseQuery('cards', 'GET', null,
-            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,valid_when,terms,expires_on,display_name,display_logo,kind,redeem_url,merchant_id),players(name),campaigns(name,logo_url)`);
+            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,valid_when,terms,expires_on,display_name,display_logo,kind,redeem_url,merchant_id),players(name),campaigns(name,logo_url,id)`);
 
           if (!cards || cards.length === 0) {
             box.innerHTML = `<div class="panel"><h3>${t('cardNotFound')}</h3><p style="color:#aaa;">${t('cardNotFoundBody')}</p></div>`;
@@ -2307,7 +2421,7 @@
             return;
           }
 
-          await loadCardLocations(design.merchant_id);
+          await loadCardLocations(design.merchant_id, card.campaign_id);
 
           const tabs = await supabaseQuery('card_tabs', 'GET', null,
             `?card_id=eq.${card.id}&order=tab_number.asc`);
@@ -2396,6 +2510,17 @@
               </div>
             </div>
 
+            ${CARD_LOCATIONS.length ? `
+            <div class="panel" style="margin-bottom:16px;">
+              <h3>${t('whereValid')}</h3>
+              <div style="margin-top:10px;">
+                ${CARD_LOCATIONS.map(l => `
+                  <div style="padding:9px 10px;background:#0e0a11;border-radius:8px;margin:5px 0;font-size:13px;">
+                    ${l.name}
+                  </div>`).join('')}
+              </div>
+            </div>` : ''}
+
             <div class="panel">
               <h3>${t('yourCoupons')}</h3>
               <p style="margin:6px 0 14px 0;font-size:12px;color:#888;">${t('couponHelp')}</p>
@@ -2429,13 +2554,27 @@
     // the card loads so the redeem prompt is instant at the counter.
     let CARD_LOCATIONS = [];
 
-    async function loadCardLocations(merchantId) {
+    async function loadCardLocations(merchantId, campaignId) {
       CARD_LOCATIONS = [];
       if (!merchantId) return;
       try {
-        const rows = await supabaseQuery('merchant_locations', 'GET', null,
-          `?merchant_id=eq.${merchantId}&active=eq.true&order=name.asc`);
-        CARD_LOCATIONS = rows || [];
+        const all = await supabaseQuery('merchant_locations', 'GET', null,
+          `?merchant_id=eq.${merchantId}&active=eq.true&order=name.asc`) || [];
+
+        // A campaign with specific stores ticked honors only those.
+        // Nothing ticked means every location honors it, which is the
+        // normal case.
+        if (campaignId) {
+          const chosen = await supabaseQuery('campaign_locations', 'GET', null,
+            `?campaign_id=eq.${campaignId}&select=location_id`);
+          if (chosen && chosen.length > 0) {
+            const only = new Set(chosen.map(r => r.location_id));
+            CARD_LOCATIONS = all.filter(l => only.has(l.id));
+            return;
+          }
+        }
+
+        CARD_LOCATIONS = all;
       } catch (e) {
         console.error('Locations:', e);
       }
