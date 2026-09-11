@@ -2098,37 +2098,49 @@
           const left = list.filter(t => t.status === 'sealed').length;
           const used = list.filter(t => t.status === 'redeemed').length;
 
+          // Each coupon carries the merchant's mark, the way a printed
+          // card does — so a tab is recognisable at a counter without
+          // reading anything. Falls back to the first letter when a
+          // merchant has no logo on file.
+          const brandMark = (size, dim) => {
+            if (merchant.logo_url) {
+              return `<img src="${merchant.logo_url}" alt="" style="width:${size}px;height:${size}px;border-radius:${Math.round(size / 4)}px;object-fit:cover;display:block;margin:0 auto;${dim ? 'filter:grayscale(1);' : ''}">`;
+            }
+            const letter = (merchant.name || design.name || '?').trim().charAt(0).toUpperCase();
+            return `<div style="width:${size}px;height:${size}px;border-radius:${Math.round(size / 4)}px;margin:0 auto;background:#1a1420;display:grid;place-content:center;font-weight:950;font-size:${Math.round(size / 2)}px;color:var(--gold);">${letter}</div>`;
+          };
+
           const tabsHtml = list.map(t => {
             if (t.status === 'sealed') {
               if (expired) {
                 return `
-                  <div style="padding:16px 10px;background:#0e0a11;border:1px solid #ffffff14;border-radius:15px;text-align:center;opacity:.45;">
-                    <p style="margin:0;font-size:22px;">⌛</p>
-                    <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
+                  <div style="padding:14px 10px;background:#0e0a11;border:1px solid #ffffff14;border-radius:15px;text-align:center;opacity:.45;">
+                    ${brandMark(30, true)}
+                    <p style="margin:8px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
                     <p style="margin:4px 0 0 0;font-size:10px;color:#888;">${t2('expiredWord')}</p>
                   </div>`;
               }
               return `
-                <div style="padding:16px 10px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelTab('${t.id}')">
-                  <p style="margin:0;font-size:22px;">🔒</p>
-                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
+                <div style="padding:14px 10px;background:linear-gradient(145deg,#2b1039,#0d0911);border:1px solid #ffffff1d;border-radius:15px;text-align:center;cursor:pointer;" onclick="peelTab('${t.id}')">
+                  ${brandMark(32)}
+                  <p style="margin:8px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
                   <p style="margin:4px 0 0 0;font-size:11px;color:var(--gold);font-weight:950;">${t2('tapToPeel')}</p>
                 </div>`;
             }
             if (t.status === 'peeled') {
               return `
-                <div style="padding:16px 10px;background:linear-gradient(145deg,#1c3a1c,#0d110d);border:1px solid #6f6a;border-radius:15px;text-align:center;">
-                  <p style="margin:0;font-size:22px;">✓</p>
-                  <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
+                <div style="padding:14px 10px;background:linear-gradient(145deg,#1c3a1c,#0d110d);border:1px solid #6f6a;border-radius:15px;text-align:center;">
+                  ${brandMark(30)}
+                  <p style="margin:8px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
                   ${expired
                     ? `<p style="margin:6px 0 0 0;font-size:10px;color:#888;">${t2('expiredWord')}</p>`
                     : `<button class="btn" onclick="redeemTab('${t.id}')" style="margin-top:8px;padding:5px 10px;font-size:11px;">${t2('redeem')}</button>`}
                 </div>`;
             }
             return `
-              <div style="padding:16px 10px;background:#0e0a11;border:1px solid #ffffff14;border-radius:15px;text-align:center;opacity:.55;">
-                <p style="margin:0;font-size:22px;">✅</p>
-                <p style="margin:6px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
+              <div style="padding:14px 10px;background:#0e0a11;border:1px solid #ffffff14;border-radius:15px;text-align:center;opacity:.5;">
+                ${brandMark(30, true)}
+                <p style="margin:8px 0 0 0;font-size:11px;color:#aaa;">${t2('tabWord')} ${t.tab_number}</p>
                 <p style="margin:4px 0 0 0;font-size:10px;color:#888;">${t2('used')}</p>
               </div>`;
           }).join('');
