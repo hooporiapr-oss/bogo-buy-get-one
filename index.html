@@ -399,6 +399,12 @@
         oneYearAccess:'One year of access', yourAccessCode:'Your access code',
         openProduct:'Open it', accessHelp:'Enter this code when the site asks for one. Keep this page or the email.',
         teamLogo:'Team Logo URL (optional)',
+        locations:'Locations', locationsBody:'The stores that honor these coupons. A cashier picks one when redeeming.',
+        noLocations:'No locations yet.', addLocation:'Add', locationNamePh:'Store name',
+        locationTownPh:'Town', enterLocationName:'Enter a store name',
+        confirmDeleteLocation:'Delete this location?',
+        locationInUse:'Could not delete — coupons have been redeemed there.',
+        whereRedeemed:'Which location?',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -545,6 +551,12 @@
         oneYearAccess:'Un a\u00f1o de acceso', yourAccessCode:'Tu c\u00f3digo de acceso',
         openProduct:'Abrir', accessHelp:'Entra este c\u00f3digo cuando el sitio te lo pida. Guarda esta p\u00e1gina o el correo.',
         teamLogo:'URL del logo del equipo (opcional)',
+        locations:'Locales', locationsBody:'Los locales que honran estos cupones. El cajero escoge uno al redimir.',
+        noLocations:'Todav\u00eda no hay locales.', addLocation:'A\u00f1adir', locationNamePh:'Nombre del local',
+        locationTownPh:'Pueblo', enterLocationName:'Entra el nombre del local',
+        confirmDeleteLocation:'\u00bfEliminar este local?',
+        locationInUse:'No se pudo eliminar — ya se redimieron cupones ah\u00ed.',
+        whereRedeemed:'\u00bfCu\u00e1l local?',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -938,9 +950,13 @@
                   <p style="margin:3px 0 0 0;font-size:11px;color:#888;">${m.contact_email || t('noContact')}</p>
                 </div>
               </div>
-              <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;flex-shrink:0;">${t('delete')}</button>
+              <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                <button class="btn alt" onclick="toggleLocations('${m.id}')" style="padding:6px 10px;font-size:11px;">${t('locations')}</button>
+                <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
+              </div>
             </div>
             <div id="merchantStats-${m.id}" style="margin-top:8px;font-size:12px;color:#888;">—</div>
+            <div id="merchantLocations-${m.id}" style="display:none;margin-top:10px;"></div>
           </div>
         `).join('');
         merchants.forEach(m => loadMerchantNumbers(m.id));
@@ -992,6 +1008,91 @@
         loadMerchants();
       } catch (error) {
         alert(t('merchantHasCards'));
+      }
+    }
+
+    // ===== MERCHANT LOCATIONS =====
+    // The list of stores that actually honor this merchant's coupons.
+    // It is what a cashier picks from when redeeming, and what the
+    // per-store numbers are grouped by.
+
+    async function toggleLocations(merchantId) {
+      const box = document.getElementById('merchantLocations-' + merchantId);
+      if (!box) return;
+
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      loadLocations(merchantId);
+    }
+
+    async function loadLocations(merchantId) {
+      const box = document.getElementById('merchantLocations-' + merchantId);
+      if (!box) return;
+      box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('loading')}</p>`;
+
+      try {
+        const rows = await supabaseQuery('merchant_locations', 'GET', null,
+          `?merchant_id=eq.${merchantId}&order=name.asc`);
+
+        // redemption counts per location
+        const tabs = await supabaseQuery('card_tabs', 'GET', null,
+          '?status=eq.redeemed&select=redeemed_location');
+        const counts = {};
+        (tabs || []).forEach(tb => {
+          if (!tb.redeemed_location) return;
+          counts[tb.redeemed_location] = (counts[tb.redeemed_location] || 0) + 1;
+        });
+
+        const list = (rows || []).map(r => `
+          <div style="padding:9px 10px;background:#1a1420;border-radius:8px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;">
+            <span>
+              <strong>${r.name}</strong>
+              ${r.town ? `<span style="color:#888;"> · ${r.town}</span>` : ''}
+              ${r.active === false ? `<span style="color:#f66;"> · ${t('inactive')}</span>` : ''}
+            </span>
+            <span style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+              <span style="color:var(--gold);font-weight:950;">${counts[r.id] || 0}</span>
+              <button class="btn red" onclick="deleteLocation('${r.id}','${merchantId}')" style="padding:3px 8px;font-size:10px;">${t('delete')}</button>
+            </span>
+          </div>`).join('');
+
+        box.innerHTML = `
+          <p style="margin:0 0 8px 0;font-size:11px;color:#888;">${t('locationsBody')}</p>
+          ${list || `<p style="color:#aaa;font-size:12px;">${t('noLocations')}</p>`}
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+            <input type="text" id="locName-${merchantId}" placeholder="${t('locationNamePh')}" style="flex:1;min-width:130px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;font-family:inherit;font-size:12px;">
+            <input type="text" id="locTown-${merchantId}" placeholder="${t('locationTownPh')}" style="flex:1;min-width:110px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;font-family:inherit;font-size:12px;">
+            <button class="btn" onclick="addLocation('${merchantId}')" style="padding:8px 14px;font-size:11px;">${t('addLocation')}</button>
+          </div>`;
+      } catch (error) {
+        box.innerHTML = '<p style="color:#f66;font-size:12px;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function addLocation(merchantId) {
+      const name = (document.getElementById('locName-' + merchantId).value || '').trim();
+      const town = (document.getElementById('locTown-' + merchantId).value || '').trim();
+      if (!name) { alert(t('enterLocationName')); return; }
+
+      try {
+        await supabaseQuery('merchant_locations', 'POST', {
+          merchant_id: merchantId,
+          name,
+          town: town || null
+        }, '?select=*');
+        loadLocations(merchantId);
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function deleteLocation(id, merchantId) {
+      if (!confirm(t('confirmDeleteLocation'))) return;
+      try {
+        await supabaseQuery(`merchant_locations?id=eq.${id}`, 'DELETE');
+        loadLocations(merchantId);
+      } catch (error) {
+        alert(t('locationInUse'));
       }
     }
 
@@ -2084,7 +2185,7 @@
 
         try {
           const cards = await supabaseQuery('cards', 'GET', null,
-            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,valid_when,terms,expires_on,display_name,display_logo,kind,redeem_url),players(name),campaigns(name,logo_url)`);
+            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,valid_when,terms,expires_on,display_name,display_logo,kind,redeem_url,merchant_id),players(name),campaigns(name,logo_url)`);
 
           if (!cards || cards.length === 0) {
             box.innerHTML = `<div class="panel"><h3>${t('cardNotFound')}</h3><p style="color:#aaa;">${t('cardNotFoundBody')}</p></div>`;
@@ -2122,6 +2223,8 @@
               <button class="btn alt" onclick="saveCardLink()" style="margin-top:18px;">${t('saveCardLink')}</button>`;
             return;
           }
+
+          await loadCardLocations(design.merchant_id);
 
           const tabs = await supabaseQuery('card_tabs', 'GET', null,
             `?card_id=eq.${card.id}&order=tab_number.asc`);
@@ -2239,14 +2342,51 @@
       }
     }
 
+    // Locations for the merchant whose card is open, fetched once when
+    // the card loads so the redeem prompt is instant at the counter.
+    let CARD_LOCATIONS = [];
+
+    async function loadCardLocations(merchantId) {
+      CARD_LOCATIONS = [];
+      if (!merchantId) return;
+      try {
+        const rows = await supabaseQuery('merchant_locations', 'GET', null,
+          `?merchant_id=eq.${merchantId}&active=eq.true&order=name.asc`);
+        CARD_LOCATIONS = rows || [];
+      } catch (e) {
+        console.error('Locations:', e);
+      }
+    }
+
     async function redeemTab(tabId) {
+      let locationId = null;
+
+      // Only ask when there is a real choice to make — a merchant with
+      // one store should not slow the counter down with a question
+      // that has one answer.
+      if (CARD_LOCATIONS.length === 1) {
+        locationId = CARD_LOCATIONS[0].id;
+      } else if (CARD_LOCATIONS.length > 1) {
+        const menu = CARD_LOCATIONS
+          .map((l, i) => `${i + 1}. ${l.name}${l.town ? ' (' + l.town + ')' : ''}`)
+          .join('\n');
+        const pick = prompt(t('whereRedeemed') + '\n\n' + menu, '');
+        if (pick === null) return;
+        const n = parseInt(pick, 10);
+        if (n >= 1 && n <= CARD_LOCATIONS.length) {
+          locationId = CARD_LOCATIONS[n - 1].id;
+        }
+      }
+
       const staff = prompt(t('staffPrompt'), '');
       if (staff === null) return;
+
       try {
         await supabaseQuery(`card_tabs?id=eq.${tabId}`, 'PATCH', {
           status: 'redeemed',
           redeemed_at: new Date().toISOString(),
-          redeemed_by: staff || 'Staff'
+          redeemed_by: staff || 'Staff',
+          redeemed_location: locationId
         });
         loadSupporterCard();
         alert(t('redeemed'));
