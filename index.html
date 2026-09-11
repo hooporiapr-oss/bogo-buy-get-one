@@ -408,6 +408,7 @@
         whereRedeemed:'Which location?',
         locationTownPh:'Town', storeNumberPh:'Store # (optional)', enterTown:'Enter the town',
         offerTextHint:'Write it the way a cashier will read it. Name the item and the size.',
+        edit:'Edit', saved:'Saved',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -562,6 +563,7 @@
         whereRedeemed:'\u00bfCu\u00e1l local?',
         locationTownPh:'Pueblo', storeNumberPh:'Local # (opcional)', enterTown:'Entra el pueblo',
         offerTextHint:'Escr\u00edbelo como lo leer\u00e1 el cajero. Nombra el art\u00edculo y el tama\u00f1o.',
+        edit:'Editar', saved:'Guardado',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -956,6 +958,7 @@
                 </div>
               </div>
               <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                <button class="btn alt" onclick="editMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;">${t('edit')}</button>
                 <button class="btn alt" onclick="toggleLocations('${m.id}')" style="padding:6px 10px;font-size:11px;">${t('locations')}</button>
                 <button class="btn red" onclick="deleteMerchant('${m.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
               </div>
@@ -1013,6 +1016,77 @@
         loadMerchants();
       } catch (error) {
         alert(t('merchantHasCards'));
+      }
+    }
+
+    // ===== EDITING MERCHANTS AND CAMPAIGNS =====
+
+    async function editMerchant(id) {
+      try {
+        const rows = await supabaseQuery('merchants', 'GET', null, `?id=eq.${id}`);
+        if (!rows || rows.length === 0) return;
+        const m = rows[0];
+
+        const name = prompt(t('businessName'), m.name || '');
+        if (name === null) return;
+        const logo = prompt(t('logoUrl'), m.logo_url || '');
+        if (logo === null) return;
+        const contact = prompt(t('contactName'), m.contact_name || '');
+        if (contact === null) return;
+        const email = prompt(t('contactEmail'), m.contact_email || '');
+        if (email === null) return;
+
+        await supabaseQuery(`merchants?id=eq.${id}`, 'PATCH', {
+          name: name.trim() || m.name,
+          logo_url: logo.trim() || null,
+          contact_name: contact.trim() || null,
+          contact_email: email.trim() || null
+        });
+
+        // Card designs carry their own copy of the brand so a sold card
+        // keeps what it was sold with. Changing the merchant here is a
+        // deliberate rebrand, so the designs are re-synced to match.
+        await supabaseQuery(`card_designs?merchant_id=eq.${id}`, 'PATCH', {
+          display_name: name.trim() || m.name,
+          display_logo: logo.trim() || null
+        });
+
+        loadMerchants();
+        loadDesigns();
+        alert(t('saved'));
+      } catch (error) {
+        console.error('Edit merchant:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function editCampaign(id) {
+      try {
+        const rows = await supabaseQuery('campaigns', 'GET', null, `?id=eq.${id}`);
+        if (!rows || rows.length === 0) return;
+        const c = rows[0];
+
+        const name = prompt(t('campaignName'), c.name || '');
+        if (name === null) return;
+        const logo = prompt(t('teamLogo'), c.logo_url || '');
+        if (logo === null) return;
+        const goal = prompt(t('campaignGoal'), c.goal || '');
+        if (goal === null) return;
+        const desc = prompt(t('description'), c.description || '');
+        if (desc === null) return;
+
+        await supabaseQuery(`campaigns?id=eq.${id}`, 'PATCH', {
+          name: name.trim() || c.name,
+          logo_url: logo.trim() || null,
+          goal: parseFloat(goal) || c.goal,
+          description: desc.trim() || null
+        });
+
+        loadCampaigns();
+        alert(t('saved'));
+      } catch (error) {
+        console.error('Edit campaign:', error);
+        alert('Error: ' + error.message);
       }
     }
 
@@ -1360,6 +1434,7 @@
                 </div>
                 <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                   <button class="btn" onclick="copyTeamLink('${c.slug}')" style="padding:6px 10px;font-size:11px;">${t('teamLink')}</button>
+                  <button class="btn alt" onclick="editCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('edit')}</button>
                   <button class="btn alt" onclick="toggleCampaignCards('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('chooseCards')}</button>
                   <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
                 </div>
