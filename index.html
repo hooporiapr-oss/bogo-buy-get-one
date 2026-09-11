@@ -1818,7 +1818,8 @@
 
       whenReady('coachLocked', async () => {
         try {
-          const coaches = await supabaseQuery('coaches', 'GET', null, '?select=id,campaign_id,name,email');
+          const coaches = await supabaseQuery('coaches', 'GET', null,
+            '?select=id,campaign_id,name,email,campaigns(name,logo_url)');
           const mine = (coaches || []).filter(c => c.email);
 
           if (mine.length === 0) {
@@ -1838,7 +1839,10 @@
           const box = document.getElementById('coachPicker');
           if (box) {
             box.innerHTML = `<p style="margin:0 0 8px 0;font-size:13px;color:#aaa;">${t('pickCampaign')}</p>` +
-              mine.map(c => `<button class="btn alt" onclick='openCoachCampaign(${JSON.stringify(c)})' style="display:block;width:100%;margin:6px 0;">${c.name || t('tabCoach')}</button>`).join('');
+              mine.map(c => {
+                const label = (c.campaigns && c.campaigns.name) ? c.campaigns.name : t('tabCoach');
+                return `<button class="btn alt" onclick='openCoachCampaign(${JSON.stringify(c)})' style="display:flex;align-items:center;gap:10px;width:100%;margin:6px 0;text-align:left;">${teamMark(c.campaigns, 30)}<span>${label}</span></button>`;
+              }).join('');
             box.style.display = 'block';
           }
         } catch (error) {
