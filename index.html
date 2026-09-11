@@ -413,6 +413,7 @@
         allLocationsNote:'All locations honor these coupons. Tick specific stores only to narrow it.',
         someLocationsNote:'Only the ticked stores honor these coupons.',
         backToAll:'Back to all locations', whereValid:'Where these coupons work',
+        switchTeam:'Switch team',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -572,6 +573,7 @@
         allLocationsNote:'Todos los locales honran estos cupones. Marca locales espec\u00edficos solo para limitarlo.',
         someLocationsNote:'Solo los locales marcados honran estos cupones.',
         backToAll:'Volver a todos los locales', whereValid:'D\u00f3nde funcionan estos cupones',
+        switchTeam:'Cambiar equipo',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1813,6 +1815,8 @@
 
     // A signed-in coach sees only their own campaign — the database
     // returns nothing for anyone else, so there is no code to leak.
+    let MY_COACH_ROWS = [];
+
     async function initCoach() {
       if (!AUTH.get()) return;
 
@@ -1821,6 +1825,7 @@
           const coaches = await supabaseQuery('coaches', 'GET', null,
             '?select=id,campaign_id,name,email,campaigns(name,logo_url)');
           const mine = (coaches || []).filter(c => c.email);
+          MY_COACH_ROWS = mine;
 
           if (mine.length === 0) {
             // Signed in fine, but this email coaches nothing. Say so,
@@ -1862,6 +1867,19 @@
       loadCoachDashboard();
     }
 
+    // Back to the team picker. A coach running several programs moves
+    // between them constantly, and signing out to do it would be
+    // absurd.
+    function switchTeam() {
+      sessionStorage.removeItem('currentCampaignId');
+      sessionStorage.removeItem('currentCoachId');
+      const locked = document.getElementById('coachLocked');
+      const open = document.getElementById('coachUnlockedContent');
+      if (open) open.style.display = 'none';
+      if (locked) locked.style.display = 'block';
+      initCoach();
+    }
+
     async function coachLogout() {
       sessionStorage.removeItem('currentCampaignId');
       sessionStorage.removeItem('currentCoachId');
@@ -1880,7 +1898,14 @@
         // they are in the right campaign.
         const nameEl = document.getElementById('campaignNameDisplay');
         if (nameEl) {
-          nameEl.innerHTML = `<span style="display:flex;align-items:center;gap:12px;">${teamMark(campaigns[0], 42)}<span>${campaigns[0].name}</span></span>`;
+          nameEl.innerHTML = `
+            <span style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+              ${teamMark(campaigns[0], 42)}
+              <span style="flex:1;min-width:0;">${campaigns[0].name}</span>
+              ${MY_COACH_ROWS.length > 1
+                ? `<button class="btn alt" onclick="switchTeam()" style="padding:6px 12px;font-size:11px;flex-shrink:0;">${t('switchTeam')}</button>`
+                : ''}
+            </span>`;
         }
         
         const players = await supabaseQuery('players', 'GET', null, `?campaign_id=eq.${campaignId}&order=created_at.desc`);
