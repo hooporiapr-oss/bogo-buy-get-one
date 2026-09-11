@@ -230,6 +230,9 @@
             <label data-i18n="campaignName">Campaign Name</label>
             <input type="text" id="campaignName" data-i18n-ph="campaignNamePh" placeholder="Enter campaign name">
 
+            <label data-i18n="teamLogo">Team Logo URL (optional)</label>
+            <input type="text" id="campaignLogo" placeholder="https://...">
+
             <label data-i18n="campaignGoal">Campaign Goal ($)</label>
             <input type="number" id="campaignGoal" data-i18n-ph="campaignGoalPh" placeholder="Enter goal amount">
 
@@ -395,6 +398,7 @@
         licenseProduct:'Product code', licenseProductPh:'hooporia', redeemUrl:'Where they use it',
         oneYearAccess:'One year of access', yourAccessCode:'Your access code',
         openProduct:'Open it', accessHelp:'Enter this code when the site asks for one. Keep this page or the email.',
+        teamLogo:'Team Logo URL (optional)',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -540,6 +544,7 @@
         licenseProduct:'C\u00f3digo del producto', licenseProductPh:'hooporia', redeemUrl:'D\u00f3nde se usa',
         oneYearAccess:'Un a\u00f1o de acceso', yourAccessCode:'Tu c\u00f3digo de acceso',
         openProduct:'Abrir', accessHelp:'Entra este c\u00f3digo cuando el sitio te lo pida. Guarda esta p\u00e1gina o el correo.',
+        teamLogo:'URL del logo del equipo (opcional)',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -792,6 +797,16 @@
       if (el) { cb(el); return; }
       if (tries <= 0) return;
       setTimeout(() => whenReady(id, cb, tries - 1), 100);
+    }
+
+    // A team's crest, or its initial when there is no logo on file.
+    function teamMark(campaign, size) {
+      if (!campaign) return '';
+      if (campaign.logo_url) {
+        return `<img src="${campaign.logo_url}" alt="" style="width:${size}px;height:${size}px;border-radius:${Math.round(size / 5)}px;object-fit:cover;flex-shrink:0;">`;
+      }
+      const letter = (campaign.name || '?').trim().charAt(0).toUpperCase();
+      return `<div style="width:${size}px;height:${size}px;border-radius:${Math.round(size / 5)}px;background:#1a1420;display:grid;place-content:center;font-weight:950;font-size:${Math.round(size / 2)}px;color:var(--gold);flex-shrink:0;">${letter}</div>`;
     }
 
     function money(n) {
@@ -1179,6 +1194,7 @@
           goal: parseFloat(goal),
           description: desc,
           admin_code: adminCode,
+          logo_url: document.getElementById('campaignLogo').value.trim() || null,
           slug
         }, '?select=*');
         
@@ -1195,6 +1211,7 @@
         document.getElementById('campaignName').value = '';
         document.getElementById('campaignGoal').value = '';
         document.getElementById('campaignDesc').value = '';
+        document.getElementById('campaignLogo').value = '';
         document.getElementById('createCampaignForm').style.display = 'none';
         
         alert('Campaign created!\nCoach Code: ' + coachCode);
@@ -1557,7 +1574,12 @@
         const campaigns = await supabaseQuery('campaigns', 'GET', null, `?id=eq.${campaignId}`);
         if (!campaigns || campaigns.length === 0) return;
         
-        document.getElementById('campaignNameDisplay').textContent = campaigns[0].name;
+        // Crest beside the campaign name, so a coach can see at a glance
+        // they are in the right campaign.
+        const nameEl = document.getElementById('campaignNameDisplay');
+        if (nameEl) {
+          nameEl.innerHTML = `<span style="display:flex;align-items:center;gap:12px;">${teamMark(campaigns[0], 42)}<span>${campaigns[0].name}</span></span>`;
+        }
         
         const players = await supabaseQuery('players', 'GET', null, `?campaign_id=eq.${campaignId}&order=created_at.desc`);
         
@@ -1825,8 +1847,13 @@
 
           box.innerHTML = `
             <div class="panel" style="margin-bottom:16px;">
-              <h2 style="margin:0;">${campaign.name}</h2>
-              ${campaign.description ? `<p style="margin:8px 0 0 0;color:#aaa;font-size:14px;">${campaign.description}</p>` : ''}
+              <div style="display:flex;align-items:center;gap:14px;">
+                ${teamMark(campaign, 62)}
+                <div>
+                  <h2 style="margin:0;">${campaign.name}</h2>
+                  ${campaign.description ? `<p style="margin:6px 0 0 0;color:#aaa;font-size:14px;">${campaign.description}</p>` : ''}
+                </div>
+              </div>
             </div>
 
             <div class="panel" style="margin-bottom:16px;">
@@ -1946,8 +1973,13 @@
 
           box.innerHTML = `
             <div class="panel" style="margin-bottom:16px;">
-              <h3 style="margin:0;">${player.name}</h3>
-              <p style="margin:6px 0 0 0;color:#aaa;font-size:13px;">${campaign ? campaign.name : 'Campaign'}</p>
+              <div style="display:flex;align-items:center;gap:14px;">
+                ${teamMark(campaign, 54)}
+                <div>
+                  <h3 style="margin:0;">${player.name}</h3>
+                  <p style="margin:6px 0 0 0;color:#aaa;font-size:13px;">${campaign ? campaign.name : ''}</p>
+                </div>
+              </div>
             </div>
 
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px;">
@@ -2052,7 +2084,7 @@
 
         try {
           const cards = await supabaseQuery('cards', 'GET', null,
-            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,valid_when,terms,expires_on,display_name,display_logo,kind,redeem_url),players(name),campaigns(name)`);
+            `?card_token=eq.${token}&select=*,card_designs(name,offer_text,valid_when,terms,expires_on,display_name,display_logo,kind,redeem_url),players(name),campaigns(name,logo_url)`);
 
           if (!cards || cards.length === 0) {
             box.innerHTML = `<div class="panel"><h3>${t('cardNotFound')}</h3><p style="color:#aaa;">${t('cardNotFoundBody')}</p></div>`;
@@ -2155,11 +2187,14 @@
                   ${design.valid_when ? `<p style="margin:4px 0 0 0;font-size:12px;color:#E8B23A;">${design.valid_when}</p>` : ''}
                 </div>
               </div>
-              <p style="margin:12px 0 0 0;font-size:12px;color:#aaa;">
-                ${t('cardWord')} <strong style="font-family:monospace;color:var(--gold);">${card.card_token}</strong>
-                ${card.players ? ` · ${t('supporting')} ${card.players.name}` : ''}
-                ${card.campaigns ? ` · ${card.campaigns.name}` : ''}
-              </p>
+              <div style="display:flex;align-items:center;gap:10px;margin:12px 0 0 0;">
+                ${card.campaigns ? teamMark(card.campaigns, 34) : ''}
+                <p style="margin:0;font-size:12px;color:#aaa;">
+                  ${t('cardWord')} <strong style="font-family:monospace;color:var(--gold);">${card.card_token}</strong>
+                  ${card.players ? `<br>${t('supporting')} ${card.players.name}` : ''}
+                  ${card.campaigns ? `${card.players ? ' · ' : '<br>'}${card.campaigns.name}` : ''}
+                </p>
+              </div>
               ${card.expires_on ? `<p style="margin:6px 0 0 0;font-size:12px;color:${expired ? '#f66' : '#888'};font-weight:${expired ? '950' : '400'};">${expired ? t('cardExpired') : t('validThrough')} ${card.expires_on}</p>` : ''}
               ${design.terms ? `<p style="margin:6px 0 0 0;font-size:11px;color:#888;">${design.terms}</p>` : ''}
             </div>
