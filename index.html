@@ -468,6 +468,8 @@
         awaitingPayment:'Awaiting payment', collectedWord:'Collected', teamGets:'Team gets',
         st_sent:'invoiced', st_paid:'paid', st_failed:'payment failed',
         st_no_points:'no points scored', st_too_small:'too small to invoice',
+        players:'Players', rosterBody:'Add players yourself when the campaign is your own program and there is no outside coach.',
+        playerHasSales:'Could not remove — that player has sales or a challenge run.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -647,6 +649,8 @@
         awaitingPayment:'Por cobrar', collectedWord:'Cobrado', teamGets:'El equipo recibe',
         st_sent:'facturado', st_paid:'pagado', st_failed:'pago fallido',
         st_no_points:'sin puntos', st_too_small:'monto muy peque\u00f1o',
+        players:'Jugadores', rosterBody:'A\u00f1ade jugadores t\u00fa mismo cuando la campa\u00f1a es de tu propio programa y no hay entrenador externo.',
+        playerHasSales:'No se pudo eliminar — ese jugador tiene ventas o una corrida.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -1100,6 +1104,99 @@
         loadMerchants();
       } catch (error) {
         alert(t('merchantHasCards'));
+      }
+    }
+
+    // ===== ROSTER, FROM ADMIN =====
+    // A coach normally builds their own roster, but plenty of
+    // campaigns are our own program with no outside coach at all.
+    // The database already allows an admin to do this; this is the
+    // screen for it.
+
+    async function toggleCampaignPlayers(campaignId) {
+      const box = document.getElementById('campaignPlayers-' + campaignId);
+      if (!box) return;
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      loadCampaignPlayers(campaignId);
+    }
+
+    async function loadCampaignPlayers(campaignId) {
+      const box = document.getElementById('campaignPlayers-' + campaignId);
+      if (!box) return;
+      box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('loading')}</p>`;
+
+      try {
+        const players = await supabaseQuery('players', 'GET', null,
+          `?campaign_id=eq.${campaignId}&order=name.asc`);
+
+        // what each player has raised, so the roster is useful rather
+        // than just a list of names
+        const cards = await supabaseQuery('cards', 'GET', null,
+          `?campaign_id=eq.${campaignId}&select=player_id,team_amount`);
+        const raisedBy = {};
+        (cards || []).forEach(c => {
+          if (!c.player_id) return;
+          raisedBy[c.player_id] = (raisedBy[c.player_id] || 0) + Number(c.team_amount || 0);
+        });
+
+        const rows = (players || []).map(p => `
+          <div style="padding:9px 10px;background:#1a1420;border-radius:8px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;">
+            <span>
+              <strong>${p.name}</strong>
+              <span style="color:var(--gold);margin-left:8px;">${money(raisedBy[p.id] || 0)}</span>
+            </span>
+            <span style="display:flex;gap:6px;flex-shrink:0;">
+              <button class="btn" onclick="copyPlayerLink('${p.id}')" style="padding:4px 9px;font-size:10px;">${t('link')}</button>
+              <button class="btn red" onclick="adminRemovePlayer('${p.id}','${campaignId}')" style="padding:4px 9px;font-size:10px;">${t('remove')}</button>
+            </span>
+          </div>`).join('');
+
+        box.innerHTML = `
+          <p style="margin:0 0 8px 0;font-size:11px;color:#888;">${t('rosterBody')}</p>
+          ${rows || `<p style="color:#aaa;font-size:12px;">${t('noPlayers')}</p>`}
+          <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;">
+            <input type="text" id="newPlayer-${campaignId}" placeholder="${t('playerNamePh')}"
+              onkeydown="if(event.key==='Enter')adminAddPlayer('${campaignId}')"
+              style="flex:1;min-width:150px;padding:8px 10px;border-radius:8px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;font-family:inherit;font-size:12px;">
+            <button class="btn" onclick="adminAddPlayer('${campaignId}')" style="padding:8px 14px;font-size:11px;">${t('addPlayerBtn')}</button>
+          </div>`;
+      } catch (error) {
+        console.error('Roster:', error);
+        box.innerHTML = '<p style="color:#f66;font-size:12px;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function adminAddPlayer(campaignId) {
+      const field = document.getElementById('newPlayer-' + campaignId);
+      const name = (field.value || '').trim();
+      if (!name) { alert(t('enterPlayerName')); return; }
+
+      try {
+        // coach_id is left null — this campaign is run from admin, and
+        // a player does not need a coach record to have a link, a
+        // total, or a challenge run.
+        await supabaseQuery('players', 'POST', {
+          campaign_id: campaignId,
+          name,
+          status: 'active'
+        }, '?select=*');
+
+        field.value = '';
+        loadCampaignPlayers(campaignId);
+      } catch (error) {
+        console.error('Add player:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function adminRemovePlayer(playerId, campaignId) {
+      if (!confirm(t('confirmRemovePlayer'))) return;
+      try {
+        await supabaseQuery(`players?id=eq.${playerId}`, 'DELETE');
+        loadCampaignPlayers(campaignId);
+      } catch (error) {
+        alert(t('playerHasSales'));
       }
     }
 
@@ -1623,6 +1720,7 @@
                 <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                   <button class="btn" onclick="copyTeamLink('${c.slug}')" style="padding:6px 10px;font-size:11px;">${t('teamLink')}</button>
                   <button class="btn alt" onclick="editCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('edit')}</button>
+                  <button class="btn alt" onclick="toggleCampaignPlayers('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('players')}</button>
                   <button class="btn alt" onclick="toggleCampaignCards('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('chooseCards')}</button>
                   <button class="btn alt" onclick="toggleCampaignLocations('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('locations')}</button>
                   <button class="btn red" onclick="deleteCampaign('${c.id}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
@@ -1630,6 +1728,7 @@
               </div>
               <div id="campaignCards-${c.id}" style="display:none;margin-top:12px;"></div>
               <div id="campaignLocs-${c.id}" style="display:none;margin-top:12px;"></div>
+              <div id="campaignPlayers-${c.id}" style="display:none;margin-top:12px;"></div>
             </div>
           `;
         }
