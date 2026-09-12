@@ -462,6 +462,12 @@
         officialRun:'official', practising:'practising', notStarted:'not started',
         pointsWord:'pts', runsWord:'runs', perPoint:'per point', wholeTeam:'Whole team',
         pledgeOne:'pledge', pledgeMany:'pledges', link:'Link',
+        sendInvoices:'Invoice', confirmInvoices:'Send invoices for this challenge? Each sponsor is billed their rate times the points scored, payable in 30 days. Sponsors already invoiced are skipped.',
+        invoicesSent:'Invoices sent', alreadyInvoiced:'Already invoiced', nothingOwed:'Nothing owed',
+        invoicesFailed:'Failed', invoiceError:'Could not send invoices:', signInFirst:'Sign in again first',
+        awaitingPayment:'Awaiting payment', collectedWord:'Collected', teamGets:'Team gets',
+        st_sent:'invoiced', st_paid:'paid', st_failed:'payment failed',
+        st_no_points:'no points scored', st_too_small:'too small to invoice',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -635,6 +641,12 @@
         officialRun:'oficial', practising:'practicando', notStarted:'sin empezar',
         pointsWord:'pts', runsWord:'corridas', perPoint:'por punto', wholeTeam:'Todo el equipo',
         pledgeOne:'promesa', pledgeMany:'promesas', link:'Enlace',
+        sendInvoices:'Facturar', confirmInvoices:'\u00bfEnviar facturas de este reto? Cada patrocinador recibe su tarifa por los puntos anotados, con 30 d\u00edas para pagar. Los ya facturados se omiten.',
+        invoicesSent:'Facturas enviadas', alreadyInvoiced:'Ya facturados', nothingOwed:'Sin nada que cobrar',
+        invoicesFailed:'Fallaron', invoiceError:'No se pudieron enviar las facturas:', signInFirst:'Vuelve a iniciar sesi\u00f3n',
+        awaitingPayment:'Por cobrar', collectedWord:'Cobrado', teamGets:'El equipo recibe',
+        st_sent:'facturado', st_paid:'pagado', st_failed:'pago fallido',
+        st_no_points:'sin puntos', st_too_small:'monto muy peque\u00f1o',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -662,8 +674,8 @@
 
     let LANG = localStorage.getItem('bm_lang') || ((navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en');
 
-    function t(key) {
-      return (STRINGS[LANG] && STRINGS[LANG][key]) || STRINGS.en[key] || key;
+    function t(key, fallback) {
+      return (STRINGS[LANG] && STRINGS[LANG][key]) || STRINGS.en[key] || fallback || key;
     }
     const t2 = t;
 
@@ -1894,6 +1906,7 @@
               <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                 <button class="btn" onclick="copyChallengeLink('${ch.id}')" style="padding:6px 10px;font-size:11px;">${t('teamLink')}</button>
                 <button class="btn alt" onclick="toggleChallengeDetail('${ch.id}')" style="padding:6px 10px;font-size:11px;">${t('detail')}</button>
+                <button class="btn" onclick="sendChallengeInvoices('${ch.id}')" style="padding:6px 10px;font-size:11px;">${t('sendInvoices')}</button>
                 <button class="btn red" onclick="deleteChallenge('${ch.id}','${String(ch.name).replace(/'/g, "\\'")}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
               </div>
             </div>
@@ -1956,18 +1969,23 @@
 
         // What each pledge would come to, at the points actually scored
         // so far. A team pledge multiplies by the combined total.
-        let projected = 0, invoiced = 0, collected = 0;
+        let projected = 0, outstanding = 0, collected = 0;
         (pledges || []).forEach(p => {
           const pts = p.player_id
             ? (runBy[p.player_id] ? runBy[p.player_id].points : 0)
             : teamPoints;
-          const amount = Number(p.rate_per_point) * pts;
+          // Once invoiced, the frozen amount is the truth — not a fresh
+          // calculation that could drift if a run changed.
+          const amount = p.amount != null ? Number(p.amount) : Number(p.rate_per_point) * pts;
           projected += amount;
-          if (p.invoice_status === 'paid') collected += Number(p.amount || amount);
-          else if (p.invoiced_at) invoiced += Number(p.amount || amount);
+          if (p.invoice_status === 'paid') collected += amount;
+          else if (p.invoiced_at) outstanding += amount;
         });
 
-        const teamCut = projected * (ch.team_share_pct / 100);
+        // The team is paid a share of what was actually collected, not
+        // of what was pledged — pledged money that never arrives is not
+        // money.
+        const teamCut = collected * (ch.team_share_pct / 100);
 
         const rosterRows = (players || []).map(p => {
           const run = runBy[p.id];
@@ -2007,7 +2025,7 @@
                   <div style="color:#888;margin-top:3px;">
                     ${money(p.rate_per_point)} ${t('perPoint')} × ${pts} ${t('pointsWord')}
                     · ${p.sponsor_email}
-                    ${p.invoice_status && p.invoice_status !== 'pending' ? ' · ' + p.invoice_status : ''}
+                    ${p.invoice_status && p.invoice_status !== 'pending' ? ' · ' + t('st_' + p.invoice_status, p.invoice_status) : ''}
                   </div>
                 </div>`;
             }).join('');
@@ -2027,7 +2045,15 @@
               <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;color:var(--gold);">${money(projected)}</p>
             </div>
             <div style="padding:12px;background:#ffffff08;border-radius:10px;border:1px solid #ffffff14;">
-              <p style="margin:0;font-size:11px;color:#aaa;">${t('teamWouldGet')}</p>
+              <p style="margin:0;font-size:11px;color:#aaa;">${t('awaitingPayment')}</p>
+              <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;">${money(outstanding)}</p>
+            </div>
+            <div style="padding:12px;background:#ffffff08;border-radius:10px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:11px;color:#aaa;">${t('collectedWord')}</p>
+              <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;color:#6f6;">${money(collected)}</p>
+            </div>
+            <div style="padding:12px;background:#ffffff08;border-radius:10px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:11px;color:#aaa;">${t('teamGets')}</p>
               <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;">${money(teamCut)}</p>
             </div>
           </div>
@@ -2042,6 +2068,46 @@
       } catch (error) {
         console.error('Challenge detail:', error);
         box.innerHTML = '<p style="color:#f66;font-size:12px;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    // Invoicing runs on the payment server, which holds the Stripe key.
+    // The admin's own sign-in token goes with the request so the server
+    // can verify who is asking — the browser never gets to decide.
+    async function sendChallengeInvoices(challengeId) {
+      if (!confirm(t('confirmInvoices'))) return;
+
+      const token = await currentToken();
+      if (!token) { alert(t('signInFirst')); return; }
+
+      try {
+        const res = await fetch(`${PAYMENT_SERVER}/challenge-invoices`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ challenge_id: challengeId })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(t('invoiceError') + ' ' + (data.error || res.status));
+          return;
+        }
+
+        let summary = `${t('invoicesSent')}: ${data.sent}`;
+        if (data.skipped) summary += `\n${t('alreadyInvoiced')}: ${data.skipped}`;
+        if (data.zero) summary += `\n${t('nothingOwed')}: ${data.zero}`;
+        if (data.failed) summary += `\n${t('invoicesFailed')}: ${data.failed}`;
+        if (data.errors && data.errors.length) summary += '\n\n' + data.errors.join('\n');
+
+        alert(summary);
+        loadChallengeDetail(challengeId);
+      } catch (error) {
+        console.error('Invoicing:', error);
+        alert(t('invoiceError') + ' ' + error.message);
       }
     }
 
