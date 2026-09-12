@@ -470,6 +470,8 @@
         st_no_points:'no points scored', st_too_small:'too small to invoice',
         players:'Players', rosterBody:'Add players yourself when the campaign is your own program and there is no outside coach.',
         playerHasSales:'Could not remove — that player has sales or a challenge run.',
+        sponsorLink:'Sponsor', playerLink:'Player',
+        playerLinkCopied:'Player link copied. Give this only to the player — it lets them start their official run.',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -651,6 +653,8 @@
         st_no_points:'sin puntos', st_too_small:'monto muy peque\u00f1o',
         players:'Jugadores', rosterBody:'A\u00f1ade jugadores t\u00fa mismo cuando la campa\u00f1a es de tu propio programa y no hay entrenador externo.',
         playerHasSales:'No se pudo eliminar — ese jugador tiene ventas o una corrida.',
+        sponsorLink:'Padrino', playerLink:'Jugador',
+        playerLinkCopied:'Enlace del jugador copiado. D\u00e1selo solo al jugador — con \u00e9l empieza su corrida oficial.',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -2035,6 +2039,34 @@
       }
     }
 
+    // The player's own link carries their run key, so only they can
+    // start the official run. Hand it to the player; hand the sponsor
+    // link to everyone else.
+    async function copyPlayerRunLink(challengeId, playerId) {
+      try {
+        let rows = await supabaseQuery('player_run_keys', 'GET', null,
+          `?player_id=eq.${playerId}&select=run_key`);
+
+        // Players added before run keys existed, or added by a coach,
+        // get one the first time their link is needed.
+        if (!rows || rows.length === 0) {
+          const key = (crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '') : String(Math.random()).slice(2)).slice(0, 18);
+          await supabaseQuery('player_run_keys', 'POST', { player_id: playerId, run_key: key }, '?select=*');
+          rows = [{ run_key: key }];
+        }
+
+        const link = CHALLENGE_SITE + '/?c=' + challengeId + '&p=' + playerId + '&k=' + rows[0].run_key;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(link).then(() => alert(t('playerLinkCopied') + '\n\n' + link)).catch(() => prompt(t('copy'), link));
+        } else {
+          prompt(t('copy'), link);
+        }
+      } catch (error) {
+        console.error('Run link:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
     async function toggleChallengeDetail(challengeId) {
       const box = document.getElementById('challengeDetail-' + challengeId);
       if (!box) return;
@@ -2101,7 +2133,10 @@
                     : (prac ? ` · ${t('practising')} L${prac.best_level} (${prac.runs} ${t('runsWord')})` : ` · ${t('notStarted')}`)}
                 </span>
               </span>
-              <button class="btn" onclick="copyPlayerChallengeLink('${challengeId}','${p.id}')" style="padding:4px 9px;font-size:10px;flex-shrink:0;">${t('link')}</button>
+              <span style="display:flex;gap:6px;flex-shrink:0;">
+                <button class="btn alt" onclick="copyPlayerChallengeLink('${challengeId}','${p.id}')" style="padding:4px 9px;font-size:10px;">${t('sponsorLink')}</button>
+                <button class="btn" onclick="copyPlayerRunLink('${challengeId}','${p.id}')" style="padding:4px 9px;font-size:10px;">${t('playerLink')}</button>
+              </span>
             </div>`;
         }).join('');
 
