@@ -221,6 +221,41 @@
           </div>
 
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <h3 style="margin:0;" data-i18n="challenges">Fortress Challenges</h3>
+            <button class="btn" onclick="toggleForm('createChallengeForm')" data-i18n="newChallenge">+ New Challenge</button>
+          </div>
+
+          <div id="createChallengeForm" class="panel" style="display:none;margin-bottom:20px;">
+            <h3 data-i18n="createChallenge">Create a Challenge</h3>
+
+            <label data-i18n="challengeCampaign">Campaign</label>
+            <select id="challengeCampaign" style="width:100%;padding:12px;border-radius:9px;border:1px solid #ffffff1d;background:#0e0a11;color:#fff;margin-top:6px;font-family:inherit;">
+              <option value="" data-i18n="selectCampaign">Select a campaign...</option>
+            </select>
+
+            <label data-i18n="challengeName">Challenge Name</label>
+            <input type="text" id="challengeName" data-i18n-ph="challengeNamePh" placeholder="e.g. Fall Fortress Challenge">
+
+            <label data-i18n="pledgeDeadline">Pledges Close</label>
+            <input type="date" id="challengePledgeDeadline">
+
+            <label data-i18n="runDeadline">Runs Close</label>
+            <input type="date" id="challengeRunDeadline">
+
+            <label data-i18n="teamSharePct">Team Share (%)</label>
+            <input type="number" id="challengeShare" value="50" min="0" max="100">
+
+            <div style="display:flex;gap:10px;margin-top:12px;">
+              <button class="btn" onclick="createChallenge()" data-i18n="createChallengeBtn">Create Challenge</button>
+              <button class="btn alt" onclick="toggleForm('createChallengeForm')" data-i18n="cancel">Cancel</button>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-bottom:26px;">
+            <div id="challengesContainer">—</div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
             <h3 style="margin:0;" data-i18n="campaigns">Campaigns</h3>
             <button class="btn" onclick="toggleForm('createCampaignForm')" data-i18n="newCampaign">+ New Campaign</button>
           </div>
@@ -414,6 +449,19 @@
         someLocationsNote:'Only the ticked stores honor these coupons.',
         backToAll:'Back to all locations', whereValid:'Where these coupons work',
         switchTeam:'Switch team',
+        challenges:'Fortress Challenges', newChallenge:'+ New Challenge', createChallenge:'Create a Challenge',
+        challengeCampaign:'Campaign', selectCampaign:'Select a campaign...', challengeName:'Challenge Name',
+        challengeNamePh:'e.g. Fall Fortress Challenge', pledgeDeadline:'Pledges Close', runDeadline:'Runs Close',
+        createChallengeBtn:'Create Challenge', enterChallengeName:'Enter a challenge name',
+        challengeCreated:'Challenge created', noChallenges:'No challenges yet.',
+        pledgesClose:'pledges close', runsClose:'runs close', toTeam:'to team',
+        detail:'Detail', confirmDeleteChallenge:'Delete this challenge? Its pledges and runs go with it.',
+        teamPoints:'Team points', pledged:'Pledges', projected:'Projected', teamWouldGet:'Team would get',
+        projectedNote:'Projected from points scored so far. It rises as more players take their official run.',
+        rosterAndRuns:'Roster and runs', pledgesWord:'Pledges', noPledges:'No pledges yet.',
+        officialRun:'official', practising:'practising', notStarted:'not started',
+        pointsWord:'pts', runsWord:'runs', perPoint:'per point', wholeTeam:'Whole team',
+        pledgeOne:'pledge', pledgeMany:'pledges', link:'Link',
         payouts:'Payouts', teamShareTotal:'Team share', paidOut:'Paid out',
         outstanding:'Outstanding', recordPayment:'Record Payment', history:'History',
         owedToTeams:'Owed to teams', paidToDate:'Paid to date', platformShare:'Your share',
@@ -574,6 +622,19 @@
         someLocationsNote:'Solo los locales marcados honran estos cupones.',
         backToAll:'Volver a todos los locales', whereValid:'D\u00f3nde funcionan estos cupones',
         switchTeam:'Cambiar equipo',
+        challenges:'Retos Fortress', newChallenge:'+ Nuevo reto', createChallenge:'Crear un reto',
+        challengeCampaign:'Campa\u00f1a', selectCampaign:'Selecciona una campa\u00f1a...', challengeName:'Nombre del reto',
+        challengeNamePh:'ej. Reto Fortress de Oto\u00f1o', pledgeDeadline:'Cierran las promesas', runDeadline:'Cierran las corridas',
+        createChallengeBtn:'Crear reto', enterChallengeName:'Entra el nombre del reto',
+        challengeCreated:'Reto creado', noChallenges:'Todav\u00eda no hay retos.',
+        pledgesClose:'promesas cierran', runsClose:'corridas cierran', toTeam:'al equipo',
+        detail:'Detalle', confirmDeleteChallenge:'\u00bfEliminar este reto? Sus promesas y corridas se van con \u00e9l.',
+        teamPoints:'Puntos del equipo', pledged:'Promesas', projected:'Proyectado', teamWouldGet:'El equipo recibir\u00eda',
+        projectedNote:'Proyectado seg\u00fan los puntos anotados hasta ahora. Sube cuando m\u00e1s jugadores hagan su corrida oficial.',
+        rosterAndRuns:'Equipo y corridas', pledgesWord:'Promesas', noPledges:'Todav\u00eda no hay promesas.',
+        officialRun:'oficial', practising:'practicando', notStarted:'sin empezar',
+        pointsWord:'pts', runsWord:'corridas', perPoint:'por punto', wholeTeam:'Todo el equipo',
+        pledgeOne:'promesa', pledgeMany:'promesas', link:'Enlace',
         payouts:'Pagos', teamShareTotal:'Parte del equipo', paidOut:'Pagado',
         outstanding:'Pendiente', recordPayment:'Registrar pago', history:'Historial',
         owedToTeams:'Se les debe a los equipos', paidToDate:'Pagado hasta hoy', platformShare:'Tu parte',
@@ -900,6 +961,7 @@
       loadExpiry();
       loadDesigns();
       loadPayouts();
+      loadChallenges();
       loadCampaigns();
     }
 
@@ -1749,6 +1811,245 @@
       try {
         await supabaseQuery(`payouts?id=eq.${id}`, 'DELETE');
         loadPayouts();
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+
+    // ===== FORTRESS CHALLENGES =====
+    // A pledge event run against a campaign. Sponsors pledge per
+    // point, a player takes one official run, and invoices follow.
+    // Nothing here charges anyone — that happens at invoicing.
+
+    const CHALLENGE_SITE = 'https://dynamicbball.com';
+
+    function pointsFor(level) {
+      return level > 0 ? (level * (level + 1)) / 2 : 0;
+    }
+
+    async function createChallenge() {
+      const campaignId = document.getElementById('challengeCampaign').value;
+      const name = document.getElementById('challengeName').value.trim();
+
+      if (!campaignId) { alert(t('selectCampaign')); return; }
+      if (!name) { alert(t('enterChallengeName')); return; }
+
+      try {
+        const slug = name.toLowerCase().trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '') + '-' + Math.random().toString(36).substr(2, 4);
+
+        await supabaseQuery('challenges', 'POST', {
+          campaign_id: campaignId,
+          name,
+          slug,
+          pledge_deadline: document.getElementById('challengePledgeDeadline').value || null,
+          run_deadline: document.getElementById('challengeRunDeadline').value || null,
+          team_share_pct: parseInt(document.getElementById('challengeShare').value, 10) || 50
+        }, '?select=*');
+
+        document.getElementById('challengeName').value = '';
+        document.getElementById('createChallengeForm').style.display = 'none';
+        loadChallenges();
+        alert(t('challengeCreated'));
+      } catch (error) {
+        console.error('Create challenge:', error);
+        alert('Error: ' + error.message);
+      }
+    }
+
+    async function loadChallenges() {
+      const box = document.getElementById('challengesContainer');
+      if (!box) return;
+
+      try {
+        // keep the campaign dropdown in step with the campaigns list
+        const campaigns = await supabaseQuery('campaigns', 'GET', null, '?select=id,name&order=created_at.desc');
+        const select = document.getElementById('challengeCampaign');
+        if (select) {
+          select.innerHTML = `<option value="">${t('selectCampaign')}</option>` +
+            (campaigns || []).map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        }
+
+        const rows = await supabaseQuery('challenges', 'GET', null,
+          '?select=*,campaigns(name)&order=created_at.desc');
+
+        if (!rows || rows.length === 0) {
+          box.innerHTML = `<p style="color:#aaa;">${t('noChallenges')}</p>`;
+          return;
+        }
+
+        box.innerHTML = rows.map(ch => `
+          <div style="padding:14px;background:#0e0a11;border-radius:9px;margin:10px 0;border:1px solid #ffffff14;">
+            <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;">
+              <div style="flex:1;">
+                <p style="margin:0;font-weight:950;font-size:15px;">${ch.name}</p>
+                <p style="margin:4px 0 0 0;font-size:12px;color:#aaa;">${ch.campaigns ? ch.campaigns.name : ''}</p>
+                <p style="margin:4px 0 0 0;font-size:11px;color:#888;">
+                  ${ch.pledge_deadline ? t('pledgesClose') + ' ' + ch.pledge_deadline : ''}
+                  ${ch.run_deadline ? ' · ' + t('runsClose') + ' ' + ch.run_deadline : ''}
+                  · ${ch.team_share_pct}% ${t('toTeam')}
+                </p>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                <button class="btn" onclick="copyChallengeLink('${ch.id}')" style="padding:6px 10px;font-size:11px;">${t('teamLink')}</button>
+                <button class="btn alt" onclick="toggleChallengeDetail('${ch.id}')" style="padding:6px 10px;font-size:11px;">${t('detail')}</button>
+                <button class="btn red" onclick="deleteChallenge('${ch.id}','${String(ch.name).replace(/'/g, "\\'")}')" style="padding:6px 10px;font-size:11px;">${t('delete')}</button>
+              </div>
+            </div>
+            <div id="challengeDetail-${ch.id}" style="display:none;margin-top:12px;"></div>
+          </div>`).join('');
+      } catch (error) {
+        console.error('Challenges:', error);
+        box.innerHTML = '<p style="color:#f66;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    function copyChallengeLink(challengeId) {
+      const link = CHALLENGE_SITE + '/?c=' + challengeId;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => alert(t('copied') + '\n\n' + link)).catch(() => prompt(t('copy'), link));
+      } else {
+        prompt(t('copy'), link);
+      }
+    }
+
+    function copyPlayerChallengeLink(challengeId, playerId) {
+      const link = CHALLENGE_SITE + '/?c=' + challengeId + '&p=' + playerId;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(() => alert(t('copied') + '\n\n' + link)).catch(() => prompt(t('copy'), link));
+      } else {
+        prompt(t('copy'), link);
+      }
+    }
+
+    async function toggleChallengeDetail(challengeId) {
+      const box = document.getElementById('challengeDetail-' + challengeId);
+      if (!box) return;
+      if (box.style.display === 'block') { box.style.display = 'none'; return; }
+      box.style.display = 'block';
+      loadChallengeDetail(challengeId);
+    }
+
+    async function loadChallengeDetail(challengeId) {
+      const box = document.getElementById('challengeDetail-' + challengeId);
+      if (!box) return;
+      box.innerHTML = `<p style="color:#aaa;font-size:12px;">${t('loading')}</p>`;
+
+      try {
+        const chRows = await supabaseQuery('challenges', 'GET', null,
+          `?id=eq.${challengeId}&select=campaign_id,team_share_pct`);
+        if (!chRows || chRows.length === 0) return;
+        const ch = chRows[0];
+
+        const [players, runs, practice, pledges] = await Promise.all([
+          supabaseQuery('players', 'GET', null, `?campaign_id=eq.${ch.campaign_id}&select=id,name&order=name.asc`),
+          supabaseQuery('challenge_runs', 'GET', null, `?challenge_id=eq.${challengeId}&select=player_id,level_reached,points`),
+          supabaseQuery('challenge_practice', 'GET', null, `?challenge_id=eq.${challengeId}&select=player_id,best_level,runs`),
+          supabaseQuery('pledges', 'GET', null, `?challenge_id=eq.${challengeId}&select=*&order=created_at.desc`)
+        ]);
+
+        const runBy = {}; (runs || []).forEach(r => runBy[r.player_id] = r);
+        const pracBy = {}; (practice || []).forEach(r => pracBy[r.player_id] = r);
+
+        const teamPoints = (runs || []).reduce((sum, r) => sum + (r.points || 0), 0);
+
+        // What each pledge would come to, at the points actually scored
+        // so far. A team pledge multiplies by the combined total.
+        let projected = 0, invoiced = 0, collected = 0;
+        (pledges || []).forEach(p => {
+          const pts = p.player_id
+            ? (runBy[p.player_id] ? runBy[p.player_id].points : 0)
+            : teamPoints;
+          const amount = Number(p.rate_per_point) * pts;
+          projected += amount;
+          if (p.invoice_status === 'paid') collected += Number(p.amount || amount);
+          else if (p.invoiced_at) invoiced += Number(p.amount || amount);
+        });
+
+        const teamCut = projected * (ch.team_share_pct / 100);
+
+        const rosterRows = (players || []).map(p => {
+          const run = runBy[p.id];
+          const prac = pracBy[p.id];
+          const pledgeCount = (pledges || []).filter(x => x.player_id === p.id).length;
+          return `
+            <div style="padding:9px 10px;background:#1a1420;border-radius:8px;margin:5px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;">
+              <span>
+                <strong>${p.name}</strong>
+                <span style="color:#888;">
+                  · ${pledgeCount} ${pledgeCount === 1 ? t('pledgeOne') : t('pledgeMany')}
+                  ${run
+                    ? ` · ${t('officialRun')}: L${run.level_reached}, ${run.points} ${t('pointsWord')}`
+                    : (prac ? ` · ${t('practising')} L${prac.best_level} (${prac.runs} ${t('runsWord')})` : ` · ${t('notStarted')}`)}
+                </span>
+              </span>
+              <button class="btn" onclick="copyPlayerChallengeLink('${challengeId}','${p.id}')" style="padding:4px 9px;font-size:10px;flex-shrink:0;">${t('link')}</button>
+            </div>`;
+        }).join('');
+
+        const pledgeRows = (pledges || []).length === 0
+          ? `<p style="color:#aaa;font-size:12px;">${t('noPledges')}</p>`
+          : pledges.map(p => {
+              const who = p.player_id
+                ? ((players || []).filter(x => x.id === p.player_id)[0] || {}).name || '—'
+                : t('wholeTeam');
+              const pts = p.player_id
+                ? (runBy[p.player_id] ? runBy[p.player_id].points : 0)
+                : teamPoints;
+              const amount = Number(p.rate_per_point) * pts;
+              return `
+                <div style="padding:9px 10px;background:#1a1420;border-radius:8px;margin:5px 0;font-size:12px;">
+                  <div style="display:flex;justify-content:space-between;gap:8px;">
+                    <span><strong>${p.sponsor_name}</strong> <span style="color:#888;">→ ${who}</span></span>
+                    <span style="color:var(--gold);font-weight:950;flex-shrink:0;">${money(amount)}</span>
+                  </div>
+                  <div style="color:#888;margin-top:3px;">
+                    ${money(p.rate_per_point)} ${t('perPoint')} × ${pts} ${t('pointsWord')}
+                    · ${p.sponsor_email}
+                    ${p.invoice_status && p.invoice_status !== 'pending' ? ' · ' + p.invoice_status : ''}
+                  </div>
+                </div>`;
+            }).join('');
+
+        box.innerHTML = `
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px;">
+            <div style="padding:12px;background:#ffffff08;border-radius:10px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:11px;color:#aaa;">${t('teamPoints')}</p>
+              <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;color:var(--gold);">${teamPoints}</p>
+            </div>
+            <div style="padding:12px;background:#ffffff08;border-radius:10px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:11px;color:#aaa;">${t('pledged')}</p>
+              <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;">${(pledges || []).length}</p>
+            </div>
+            <div style="padding:12px;background:#ffffff08;border-radius:10px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:11px;color:#aaa;">${t('projected')}</p>
+              <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;color:var(--gold);">${money(projected)}</p>
+            </div>
+            <div style="padding:12px;background:#ffffff08;border-radius:10px;border:1px solid #ffffff14;">
+              <p style="margin:0;font-size:11px;color:#aaa;">${t('teamWouldGet')}</p>
+              <p style="margin:5px 0 0 0;font-size:20px;font-weight:950;">${money(teamCut)}</p>
+            </div>
+          </div>
+
+          <p style="margin:0 0 6px 0;font-size:11px;color:#888;">${t('projectedNote')}</p>
+
+          <p style="margin:14px 0 6px 0;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#888;">${t('rosterAndRuns')}</p>
+          ${rosterRows || `<p style="color:#aaa;font-size:12px;">${t('noPlayers')}</p>`}
+
+          <p style="margin:14px 0 6px 0;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:#888;">${t('pledgesWord')}</p>
+          ${pledgeRows}`;
+      } catch (error) {
+        console.error('Challenge detail:', error);
+        box.innerHTML = '<p style="color:#f66;font-size:12px;">Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function deleteChallenge(id, name) {
+      if (!confirm(t('confirmDeleteChallenge') + '\n\n' + name)) return;
+      try {
+        await supabaseQuery(`challenges?id=eq.${id}`, 'DELETE');
+        loadChallenges();
       } catch (error) {
         alert('Error: ' + error.message);
       }
